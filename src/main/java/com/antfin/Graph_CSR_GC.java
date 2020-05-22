@@ -2,18 +2,21 @@ package com.antfin;
 
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
+import com.antfin.util.BiHashMap;
+import com.antfin.util.GraphHelper;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @param <K>
  * @param <VV>
  * @param <EV>
  * @author Flians
- * @Description: ${description}
+ * @Description: The graph is described by Compressed Sparse Row (CSR).
+ *               When the vertex is assigned to a edge, it is saved into Map dict_V<vertex_id, value>.
+ *               For a Vertex with id = sid, csr[dict_V[sid]] is the index of its edges in targets.
+ *               If i = csr[dict_V[sid]], the j-th vertex connected by this vertex has the following relationship:
+ *                  targets[i][j] = dict_V[tid] - dict_V[sid]
  * @Title: Graph_CSR_GC
  * @ProjectName graphRE
  * @date 2020/5/18 16:13
@@ -21,11 +24,11 @@ import java.util.Map;
 public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV>{
     private Map<K, Integer> dict_V;
     // store all targets. For i-th vertex in vertices, i = dict_V[sid] and targets[i][j] = dict_V[tid] - dict_V[sid]
-    private List<List<Short> > targets;
+    private List<List<Integer> > targets;
     private List<Integer> csr;
 
     public Graph_CSR_GC() {
-        this.dict_V = new HashMap<>();
+        this.dict_V = new BiHashMap<>();
         this.targets = new ArrayList<>();
         this.csr = new ArrayList<>();
     }
@@ -63,30 +66,127 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV>{
         // the source vertex of edge has no edges.
         if (this.csr.get(this.dict_V.get(edge.getSrcId())) == -1) {
             this.csr.set(this.dict_V.get(edge.getSrcId()), this.targets.size());
-            List<Short> item = new ArrayList<>();
-            item.add((short) (this.dict_V.get(edge.getTargetId()) - this.dict_V.get(edge.getSrcId())));
+            List<Integer> item = new ArrayList<>();
+            item.add(this.dict_V.get(edge.getTargetId()) - this.dict_V.get(edge.getSrcId()));
             this.targets.add(item);
         } else {
             // the source vertex of edge has other edges.
-            this.targets.get(this.csr.get(this.dict_V.get(edge.getSrcId()))).add((short) (this.dict_V.get(edge.getTargetId()) - this.dict_V.get(edge.getSrcId())));
+            this.targets.get(this.csr.get(this.dict_V.get(edge.getSrcId()))).add(this.dict_V.get(edge.getTargetId()) - this.dict_V.get(edge.getSrcId()));
         }
     }
 
     @Override
-    public Vertex<K, VV> getVertex(K id) {
+    public Object getVertex(Object key) {
+        if (key instanceof Integer) {
+            if (this.dict_V.containsValue(key)) {
+                return ((BiHashMap)this.dict_V).getKey(key);
+            }
+        } else {
+            if (this.dict_V.containsKey(key))
+                return this.getDict_V().get(key);
+        }
         return null;
     }
 
     @Override
-    public List<Edge<K, EV>> getEdge(K sid) {
+    public List<Integer> getEdge(K sid) {
+        if (this.csr.get(this.dict_V.get(sid)) != -1)
+            return this.getTargets().get(this.csr.get(this.dict_V.get(sid)));
         return null;
+    }
+
+    @Override
+    public void clear() {
+        this.dict_V.clear();
+        this.dict_V = null;
+        this.targets.clear();
+        this.targets = null;
+        this.csr.clear();
+        this.csr = null;
+    }
+
+    public int reorder_BFS() {
+        // Degree sort to put vertices with more out-edges in front
+        List<Integer> id_V = new ArrayList<>(this.dict_V.size());
+        for (int i=0; i<this.dict_V.size(); ++i)
+            id_V.add(i);
+        Collections.sort(id_V, new Comparator<Integer>() {
+            public int compare(Integer o1, Integer o2) {
+                Integer d1=0, d2=0;
+                if (csr.get(o1) != -1)
+                    d1 = targets.get(csr.get(o1)).size();
+                if (csr.get(o2) != -1)
+                    d2 = targets.get(csr.get(o2)).size();
+                if (d1==d2) {
+                    return o1 < o2?-1:1;
+                } else {
+                    return d1 < d2 ? 1 : -1;
+                }
+            }
+        });
+
+        int[] id_new = new int[this.dict_V.size()];
+        for (int i=0; i<id_new.length; ++i) id_new[i] = -1;
+        int cur_idx = 0;
+        Queue<Integer> Vs = new LinkedList<>();
+        for (Integer vid : id_V) {
+            if (id_new[vid] == -1) {
+                id_new[vid] = cur_idx++;
+                Vs.add(vid);
+                while (!Vs.isEmpty()) {
+                    // Vertex has output edges
+                    if (this.csr.get(Vs.peek()) != -1) {
+                        for (Integer tar : this.targets.get(this.csr.get(Vs.peek())) ) {
+                            Integer tarInt = tar + Vs.peek();
+                            if (id_new[tarInt] == -1) {
+                                id_new[tarInt] = cur_idx++;
+                                Vs.add(tarInt);
+                            }
+                        }
+                    }
+                    Vs.poll();
+                }
+            }
+        }
+        Vs = null;
+
+        Iterator<String> it = (Iterator<String>) this.dict_V.keySet().iterator();
+        while (it.hasNext()){
+            String key = it.next();
+            // System.out.println("'" + key + "\t" + id_new[this.dict_V.get(key)]);
+            this.dict_V.put((K) key, id_new[this.dict_V.get(key)]);
+        }
+
+        int maxGap = 0;
+        for (int sid=0; sid < this.csr.size(); sid++) {
+            // sid <--> id_new[sid]
+            int sid_now = id_new[sid];
+            id_V.set(sid_now, this.csr.get(sid));
+            if (this.csr.get(sid) != -1)
+                maxGap = Math.max(Math.abs(maxGap), Math.abs(this.adjustTarget(sid, sid_now, this.targets.get(this.csr.get(sid)), id_new)));
+        }
+        id_new = null;
+        this.csr.clear();
+        this.csr = id_V;
+        id_V = null;
+        return maxGap;
+    }
+
+    private int adjustTarget(int sid_old, int sid_now, List<Integer> tars, int[] id_new){
+        int maxGap = 0;
+        for (int i=0; i < tars.size(); ++i){
+            int oldT = tars.get(i) + sid_old;
+            tars.set(i, id_new[oldT]-sid_now);
+            maxGap = Math.max(Math.abs(maxGap), Math.abs(tars.get(i)));
+        }
+        return maxGap;
     }
 
     public Map<K, Integer> getDict_V() {
         return this.dict_V;
     }
 
-    public List<List<Short>> getTargets() {
+    public List<List<Integer>> getTargets() {
         return this.targets;
     }
 

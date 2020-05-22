@@ -83,6 +83,14 @@ public class Graph_TwoMap<K, VV, EV> extends Graph<K, VV, EV> {
         return this.edges.get(sid);
     }
 
+    @Override
+    public void clear() {
+        this.edges.clear();
+        this.edges = null;
+        this.vertices.clear();
+        this.vertices = null;
+    }
+
     public Map<K, Vertex<K, VV>> getVertices() {
         return this.vertices;
     }

@@ -15,6 +15,7 @@ import java.util.*;
 public abstract class Graph<K, VV, EV> {
     public abstract void addVertex(Vertex<K, VV> vertex);
     public abstract void addEdge(Edge<K, EV> edge);
-    public abstract Vertex<K, VV> getVertex(K id);
-    public abstract List<Edge<K, EV> > getEdge(K sid);
+    public abstract Object getVertex(K id);
+    public abstract Object getEdge(K sid);
+    public abstract void clear();
 }
