@@ -57,6 +57,7 @@ public class GraphTest {
 
     @After
     public void tearDown() throws Exception {
+        System.out.println("Memory size: " + RamUsageEstimator.humanSizeOf(this.graph));
         System.out.println("this is @After ...");
         this.graph.clear();
         this.graph = null;
@@ -66,14 +67,7 @@ public class GraphTest {
     @Test
     public void test_TwoMap() throws IllegalAccessException {
         System.out.println(">>> Graph_TwoMap");
-        System.gc();
-        long start = Runtime.getRuntime().freeMemory();
         this.graph = new Graph_TwoMap(this.edges, false);
-        System.gc();
-        long end = Runtime.getRuntime().freeMemory();
-        // 5250376
-        // 45078192
-        System.out.println(end - start);
 
         // verity the generated graph
         int numE = 0;
@@ -83,32 +77,14 @@ public class GraphTest {
         if (numE != this.uniqueE)
             System.out.println(" some edges are lost!");
 
-        // 2738480
-        System.out.print("lucene: ");
-        System.out.println(RamUsageEstimator.sizeOfMap(((Graph_TwoMap) graph).getEdges()));
-        System.out.println(RamUsageEstimator.sizeOfMap(((Graph_TwoMap) graph).getVertices()));
-        System.out.println(RamUsageEstimator.sizeOfMap(((Graph_TwoMap) graph).getVertices()) + RamUsageEstimator.sizeOfMap(((Graph_TwoMap) graph).getEdges()));
-        /*
-        // 5742408
-        System.out.println(SizeOfObject.fullSizeOf(((Graph_TwoMap) graph).getVertices().entrySet().iterator().next())*((Graph_TwoMap) graph).getVertices().size() +
-                SizeOfObject.fullSizeOf(((Graph_TwoMap) graph).getEdges().entrySet().iterator().next())*((Graph_TwoMap) graph).getEdges().size());
-        // 13917656
-        System.out.println(Arrays.toString(((Graph_TwoMap) graph).getVertices().entrySet().toArray()).getBytes().length +
-                Arrays.toString(((Graph_TwoMap) graph).getEdges().entrySet().toArray()).getBytes().length);
-         */
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_TwoMap) this.graph).getVertices()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_TwoMap) this.graph).getEdges()));
     }
 
     @Test
     public void test_CSR_N() throws IllegalAccessException {
         System.out.println(">>> Graph_CSR_N");
-        System.gc();
-        long start = Runtime.getRuntime().freeMemory();
         this.graph = new Graph_CSR_N(this.edges, false);
-        System.gc();
-        long end = Runtime.getRuntime().freeMemory();
-        // 5254920
-        // 29439056
-        System.out.println(end - start);
 
         // verity the generated graph
         int numE = 0;
@@ -117,48 +93,17 @@ public class GraphTest {
         }
         if (numE != this.uniqueE)
             System.out.println(" some edges are lost!");
-
-        // 3054872
-        System.out.print("lucene: ");
-        String t1 = "2088977570432201";
-        Integer t2 = 1;
-        System.out.println(RamUsageEstimator.sizeOfObject(t1) + " " + RamUsageEstimator.sizeOfObject(t2));
-        System.out.println(RamUsageEstimator.sizeOfCollection(((Graph_CSR_N) graph).getCsr()) + " " + ((Graph_CSR_N) this.graph).getCsr().size());
-        System.out.println(RamUsageEstimator.sizeOfMap(((Graph_CSR_N) graph).getDict_V_edges()) +
-                RamUsageEstimator.sizeOfMap(((Graph_CSR_N) graph).getDict_V_alone()));
-        System.out.println(RamUsageEstimator.sizeOfCollection(((Graph_CSR_N) graph).getVertices()) +
-                RamUsageEstimator.sizeOfCollection(((Graph_CSR_N) graph).getEdges()) +
-                RamUsageEstimator.sizeOfCollection(((Graph_CSR_N) graph).getCsr()) +
-                RamUsageEstimator.sizeOfMap(((Graph_CSR_N) graph).getDict_V_edges()) +
-                RamUsageEstimator.sizeOfMap(((Graph_CSR_N) graph).getDict_V_alone()));
-        /*
-        // 54460800
-        System.out.println(SizeOfObject.fullSizeOf(((Graph_CSR_N) graph).getVertices().get(0)) * ((Graph_CSR_N) graph).getVertices().size() +
-                SizeOfObject.fullSizeOf(((Graph_CSR_N) graph).getEdges().get(0)) * ((Graph_CSR_N) graph).getEdges().size() +
-                SizeOfObject.fullSizeOf(((Graph_CSR_N) graph).getCsr().get(0)) * ((Graph_CSR_N) graph).getCsr().size() +
-                SizeOfObject.fullSizeOf(((Graph_CSR_N) graph).getDict_V_edges().entrySet().iterator().next()) * ((Graph_CSR_N) graph).getDict_V_edges().size() +
-                (((Graph_CSR_N) graph).getDict_V_alone().isEmpty()?0:SizeOfObject.fullSizeOf(((Graph_CSR_N) graph).getDict_V_alone().entrySet().iterator().next()) * ((Graph_CSR_N) graph).getDict_V_alone().size()));
-
-        // 13945114
-        System.out.println(Arrays.toString(((Graph_CSR_N) graph).getVertices().toArray()).getBytes().length +
-                Arrays.toString(((Graph_CSR_N) graph).getEdges().toArray()).getBytes().length +
-                Arrays.toString(((Graph_CSR_N) graph).getCsr().toArray()).getBytes().length +
-                Arrays.toString(((Graph_CSR_N) graph).getDict_V_alone().entrySet().toArray()).getBytes().length +
-                Arrays.toString(((Graph_CSR_N) graph).getDict_V_edges().entrySet().toArray()).getBytes().length);
-         */
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_N) this.graph).getVertices()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_N) this.graph).getEdges()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_N) this.graph).getDict_V_alone()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_N) this.graph).getDict_V_edges()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_N) this.graph).getCsr()));
     }
 
     @Test
     public void test_CSR() throws IllegalAccessException {
         System.out.println(">>> Graph_CSR");
-        System.gc();
-        long start = Runtime.getRuntime().freeMemory();
         this.graph = new Graph_CSR(this.edges, false);
-        System.gc();
-        long end = Runtime.getRuntime().freeMemory();
-        // 5251064
-        // 19113392
-        System.out.println(end - start);
 
         // verity the generated graph
         int numE = 0;
@@ -167,34 +112,15 @@ public class GraphTest {
         }
         if (numE != this.uniqueE)
             System.out.println(" some edges are lost!");
-
-        // 2925808
-        System.out.print("lucene: ");
-        System.out.println(RamUsageEstimator.sizeOfCollection(((Graph_CSR) graph).getVertices()) +
-                RamUsageEstimator.sizeOfCollection(((Graph_CSR) graph).getEdges()) +
-                RamUsageEstimator.sizeOfMap(((Graph_CSR) graph).getDict_V()));
-        /*
-        // 81747832
-        System.out.println(SizeOfObject.fullSizeOf(((Graph_CSR) graph).getVertices().get(0)) * ((Graph_CSR) graph).getVertices().size() +
-                SizeOfObject.fullSizeOf(((Graph_CSR) graph).getEdges().get(0)) * ((Graph_CSR) graph).getEdges().size() +
-                SizeOfObject.fullSizeOf(((Graph_CSR) graph).getDict_V().entrySet().iterator().next()) * ((Graph_CSR) graph).getDict_V().size());
-        // 13916025
-        System.out.println(Arrays.toString(((Graph_CSR) graph).getVertices().toArray()).getBytes().length +
-                Arrays.toString(((Graph_CSR) graph).getEdges().toArray()).getBytes().length +
-                Arrays.toString(((Graph_CSR) graph).getDict_V().entrySet().toArray()).getBytes().length);
-         */
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR) this.graph).getVertices()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR) this.graph).getEdges()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR) this.graph).getDict_V()));
     }
 
     @Test
     public void test_CSR_GC() throws IllegalAccessException {
         System.out.println(">>> Graph_CSR_GC");
-        System.gc();
-        long start = Runtime.getRuntime().freeMemory();
         this.graph = new Graph_CSR_GC(this.edges, false);
-        System.gc();
-        long end = Runtime.getRuntime().freeMemory();
-        // 2259176
-        System.out.println(end - start);
 
         // verity the generated graph
         int numE = 0;
@@ -203,20 +129,9 @@ public class GraphTest {
         }
         if (numE != this.uniqueE)
             System.out.println(" some edges are lost!");
-        // 2932696
-        System.out.print("lucene: ");
-        System.out.println(RamUsageEstimator.sizeOfCollection(((Graph_CSR_GC) graph).getCsr()) +
-                RamUsageEstimator.sizeOfCollection(((Graph_CSR_GC) graph).getTargets()) +
-                RamUsageEstimator.sizeOfMap(((Graph_CSR_GC) graph).getDict_V()));
 
         System.out.println(">>> After reordering");
-        System.gc();
-        start = Runtime.getRuntime().freeMemory();
         System.out.println("max gap: " + ((Graph_CSR_GC) this.graph).reorder_BFS());
-        System.gc();
-        end = Runtime.getRuntime().freeMemory();
-        // 5166064
-        System.out.println(end - start);
 
         // verity the reordered graph
         numE = 0;
@@ -225,17 +140,6 @@ public class GraphTest {
         }
         if (numE != this.uniqueE)
             System.out.println("Some edges are lost!");
-
-        /*
-        // 3749472
-        System.out.println(SizeOfObject.fullSizeOf(((Graph_CSR_GC) graph).getCsr().get(0)) * ((Graph_CSR_GC) graph).getCsr().size() +
-                SizeOfObject.fullSizeOf(((Graph_CSR_GC) graph).getTargets().get(0)) * ((Graph_CSR_GC) graph).getTargets().size() +
-                SizeOfObject.fullSizeOf(((Graph_CSR_GC) graph).getDict_V().entrySet().iterator().next()) * ((Graph_CSR_GC) graph).getDict_V().size());
-        // 789041
-        System.out.println(Arrays.toString(((Graph_CSR_GC) graph).getCsr().toArray()).getBytes().length +
-                Arrays.toString(((Graph_CSR_GC) graph).getTargets().toArray()).getBytes().length +
-                Arrays.toString(((Graph_CSR_GC) graph).getDict_V().entrySet().toArray()).getBytes().length);
-         */
     }
 
     public int verify(String key) {
