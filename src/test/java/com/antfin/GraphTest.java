@@ -37,7 +37,7 @@ public class GraphTest {
     public void setUp() throws Exception {
         System.out.println("this is @Before ...");
         GraphGenerator ggen = new GraphGenerator();
-        this.edges = ggen.getEdges(10000, 20);
+        this.edges = ggen.getEdges(100000, 20);
         this.sTt = new HashMap<>();
         this.edges.forEach(e -> {
             if (this.sTt.containsKey(e.getSrcId())) {
@@ -71,7 +71,7 @@ public class GraphTest {
 
         // verity the generated graph
         int numE = 0;
-        for (Object key:((Graph_TwoMap) this.graph).getVertices().keySet()) {
+        for (Object key : ((Graph_TwoMap) this.graph).getVertices().keySet()) {
             numE += verify((String) key);
         }
         if (numE != this.uniqueE)
@@ -93,6 +93,7 @@ public class GraphTest {
         }
         if (numE != this.uniqueE)
             System.out.println(" some edges are lost!");
+
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_N) this.graph).getVertices()));
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_N) this.graph).getEdges()));
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_N) this.graph).getDict_V_alone()));
@@ -142,6 +143,31 @@ public class GraphTest {
             System.out.println("Some edges are lost!");
     }
 
+    @Test
+    public void test_CSR_GC_STD() throws IllegalAccessException {
+        System.out.println(">>> Graph_CSR_GC_STD");
+        this.graph = new Graph_CSR_GC_STD(this.edges, false);
+
+        // verity the generated graph
+        int numE = 0;
+        for (Object key : ((Graph_CSR_GC_STD) this.graph).getDict_V().keySet()) {
+            numE += verify((String) key);
+        }
+        if (numE != this.uniqueE)
+            System.out.println(" some edges are lost!");
+
+        System.out.println(">>> After reordering");
+        System.out.println("max gap: " + ((Graph_CSR_GC_STD) this.graph).reorder_BFS());
+
+        // verity the reordered graph
+        numE = 0;
+        for (Object key : ((Graph_CSR_GC_STD) this.graph).getDict_V().keySet()) {
+            numE += verify((String) key);
+        }
+        if (numE != this.uniqueE)
+            System.out.println("Some edges are lost!");
+    }
+
     public int verify(String key) {
         int numE = 0;
         if (this.sTt.containsKey(key)) {
@@ -153,6 +179,14 @@ public class GraphTest {
                         System.out.println("<" + key + "," + this.graph.getVertex(gap + sid) + "> is not existed!");
                     }
                 });
+            } else if (this.graph instanceof Graph_CSR_GC_STD) {
+                int sid = (int) this.graph.getVertex(key);
+                for (Integer gap : ((List<Integer>) graph.getEdge(key))) {
+                    if (!this.sTt.get(key).containsKey(this.graph.getVertex(gap + sid))) {
+                        System.out.println("<" + key + "," + this.graph.getVertex(gap + sid) + "> is not existed!");
+                    }
+                    sid += gap;
+                }
             } else {
                 ((List<Edge<String, String>>) graph.getEdge(key)).forEach(e -> {
                     if (!this.sTt.get(key).containsKey(e.getTargetId())) {

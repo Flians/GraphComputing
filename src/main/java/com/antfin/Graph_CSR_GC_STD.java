@@ -1,9 +1,9 @@
 package com.antfin;
 
+import com.antfin.Graph;
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
 import com.antfin.util.BiHashMap;
-import com.antfin.util.GraphHelper;
 
 import java.util.*;
 
@@ -14,28 +14,30 @@ import java.util.*;
  * @author Flians
  * @Description: The graph is described by Compressed Sparse Row (CSR).
  *               When the vertex is assigned to a edge, it is saved into Map dict_V<vertex_id, value>.
- *               For adding a edge by the id of the source v, the complexity is O(1)
+ *               For adding a edge by the id of the source v, the complexity is O(Degree(v))
  *               For a Vertex with id = sid, csr[dict_V[sid]] is the index of its edges in targets.
- *               If i = csr[dict_V[sid]], the j-th vertex connected by this vertex has the following relationship:
+ *               If i = csr[dict_V[sid]], the first vertex connected by this vertex has the following relationship:
  *                  targets[i][j] = dict_V[tid] - dict_V[sid]
- *               For reducing the targets[i][j], make the source as close to the each sink as possible
+ *               and other vertices connected by this vertex has the following relationship:
+ *                  dict_V[tid] = SUM(targets[i][j]) + dict_V[sid], j in [0,targets[i].size())
+ *               For reducing the targets[i][j], make the source as close to the first sink as possible, and make the adjacent sink close
  * @Title: Graph_CSR_GC
  * @ProjectName graphRE
  * @date 2020/5/18 16:13
  */
-public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV>{
+public class Graph_CSR_GC_STD<K, VV, EV> extends Graph<K, VV, EV> {
     private Map<K, Integer> dict_V;
     // store all targets. For i-th vertex in vertices, i = dict_V[sid] and targets[i][j] = dict_V[tid] - dict_V[sid]
     private List<List<Integer> > targets;
     private List<Integer> csr;
 
-    public Graph_CSR_GC() {
+    public Graph_CSR_GC_STD() {
         this.dict_V = new BiHashMap<>();
         this.targets = new ArrayList<>();
         this.csr = new ArrayList<>();
     }
 
-    public Graph_CSR_GC(List vg, boolean flag) {
+    public Graph_CSR_GC_STD(List vg, boolean flag) {
         this();
         if (flag) {
             ((List<Vertex<K, VV>>) vg).forEach(this::addVertex);
@@ -44,7 +46,7 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV>{
         }
     }
 
-    public Graph_CSR_GC(List<Vertex<K, VV>> vertices, List<Edge<K, EV>> edges) {
+    public Graph_CSR_GC_STD(List<Vertex<K, VV>> vertices, List<Edge<K, EV>> edges) {
         this(vertices, true);
         edges.stream().forEach(this::addEdge);
     }
@@ -72,8 +74,12 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV>{
             item.add(this.dict_V.get(edge.getTargetId()) - this.dict_V.get(edge.getSrcId()));
             this.targets.add(item);
         } else {
+            int before = this.dict_V.get(edge.getSrcId());
+            for (Integer i:this.targets.get(this.csr.get(this.dict_V.get(edge.getSrcId())))) {
+                before += i;
+            }
             // the source vertex of edge has other edges.
-            this.targets.get(this.csr.get(this.dict_V.get(edge.getSrcId()))).add(this.dict_V.get(edge.getTargetId()) - this.dict_V.get(edge.getSrcId()));
+            this.targets.get(this.csr.get(this.dict_V.get(edge.getSrcId()))).add(this.dict_V.get(edge.getTargetId()) - before);
         }
     }
 
@@ -138,8 +144,9 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV>{
                 while (!Vs.isEmpty()) {
                     // Vertex has output edges
                     if (this.csr.get(Vs.peek()) != -1) {
+                        Integer tarInt = Vs.peek();
                         for (Integer tar : this.targets.get(this.csr.get(Vs.peek())) ) {
-                            Integer tarInt = tar + Vs.peek();
+                            tarInt += tar;
                             if (id_new[tarInt] == -1) {
                                 id_new[tarInt] = cur_idx++;
                                 Vs.add(tarInt);
@@ -175,9 +182,12 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV>{
 
     private int adjustTarget(int sid_old, List<Integer> tars, int[] id_new){
         int maxGap = 0;
-        for (int i=0; i < tars.size(); ++i){
-            int oldT = tars.get(i) + sid_old;
-            tars.set(i, id_new[oldT]-id_new[sid_old]);
+        int oldT = sid_old + tars.get(0);
+        tars.set(0, id_new[oldT]-id_new[sid_old]);
+        for (int i=1; i < tars.size(); ++i){
+            int oldTi = oldT + tars.get(i);
+            tars.set(i, id_new[oldTi]-id_new[oldT]);
+            oldT = oldTi;
             maxGap = Math.max(Math.abs(maxGap), Math.abs(tars.get(i)));
         }
         return maxGap;
