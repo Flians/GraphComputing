@@ -2,6 +2,7 @@ package com.antfin;
 
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
+import com.antfin.util.GraphHelper;
 
 import java.util.*;
 
@@ -13,6 +14,8 @@ import java.util.*;
  * @Description: The graph is described by Compressed Sparse Row (CSR).
  * When the vertex is assigned to a edge, it is saved into Map dict_V<vertex_id, value>.
  * The value is the index of this vertex in vertices, and is the index of its edges in edges.
+ * Not good:
+ *          There are duplicate edges in edges
  * @Title: Graph
  * @ProjectName graphRE
  * @date 2020/5/18 14:29
@@ -22,14 +25,11 @@ public class Graph_CSR<K, VV, EV> extends Graph<K, VV, EV> {
     private List<List<Edge<K, EV> > > edges;
     // dict_V[vertex.id] -> index, record all vertices
     private Map<K, Integer> dict_V;
-    // record the first index of the vertex without edges in vertices
-    private Integer lastV;
 
     public Graph_CSR() {
         this.vertices = new LinkedList<>();
         this.edges = new ArrayList<>();
         this.dict_V = new HashMap<>();
-        this.lastV = 0;
     }
 
     public Graph_CSR(List vg, boolean flag) {
@@ -46,6 +46,7 @@ public class Graph_CSR<K, VV, EV> extends Graph<K, VV, EV> {
         edges.stream().forEach(this::addEdge);
     }
 
+    @Override
     public void addVertex(Vertex<K, VV> vertex) {
         if (!this.dict_V.containsKey(vertex.getId())) {
             this.vertices.add(vertex);
@@ -53,13 +54,14 @@ public class Graph_CSR<K, VV, EV> extends Graph<K, VV, EV> {
         }
     }
 
+    @Override
     public void addEdge(Edge<K, EV> edge) {
         // the source vertex of edge has no edges.
         if (!this.dict_V.containsKey(edge.getSrcId())) {
             this.vertices.add(new Vertex<>(edge.getSrcId()));
-            this.dict_V.put(edge.getSrcId(), this.lastV);
-            this.dict_V.put(this.vertices.get(this.lastV).getId(), this.dict_V.size()-1);
-            this.swap(this.lastV++, this.vertices.size()-1, this.vertices);
+            this.dict_V.put(edge.getSrcId(), this.edges.size());
+            this.dict_V.put(this.vertices.get(this.edges.size()).getId(), this.dict_V.size()-1);
+            GraphHelper.swap(this.edges.size(), this.vertices.size()-1, this.vertices);
             List<Edge<K, EV> > item = new ArrayList<>();
             item.add(edge);
             this.edges.add(item);
@@ -67,12 +69,6 @@ public class Graph_CSR<K, VV, EV> extends Graph<K, VV, EV> {
             // the source vertex of edge has other edges.
             this.edges.get(this.dict_V.get(edge.getSrcId())).add(edge);
         }
-    }
-
-    private void swap(int x,int y, List ll){
-        Object ob=ll.get(x);
-        ll.set(x, ll.get(y));
-        ll.set(y, ob);
     }
 
     @Override
@@ -85,6 +81,16 @@ public class Graph_CSR<K, VV, EV> extends Graph<K, VV, EV> {
         return this.edges.get(this.dict_V.get(sid));
     }
 
+    @Override
+    public void clear() {
+        this.dict_V.clear();
+        this.dict_V = null;
+        this.edges.clear();
+        this.edges = null;
+        this.vertices.clear();
+        this.vertices = null;
+    }
+
     public List<Vertex<K, VV>> getVertices() {
         return this.vertices;
     }
@@ -95,9 +101,5 @@ public class Graph_CSR<K, VV, EV> extends Graph<K, VV, EV> {
 
     public Map<K, Integer> getDict_V() {
         return this.dict_V;
-    }
-
-    public Integer getLastV() {
-        return lastV;
     }
 }

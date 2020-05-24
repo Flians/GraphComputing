@@ -19,6 +19,7 @@ import java.util.Optional;
  * When this vertex is assigned to a edge, it is saved into Map dict_V_edges, and this edge is mapped into List csr.
  * Not good:
  *          O(N) for querying the vertex.
+ *          There are duplicate edges in edges
  * @Title: Graph
  * @ProjectName graphRE
  * @date 2020/5/14 16:37
@@ -55,6 +56,7 @@ public class Graph_CSR_N<K, VV, EV> extends Graph<K, VV, EV> {
         edges.stream().forEach(this::addEdge);
     }
 
+    @Override
     public void addVertex(Vertex<K, VV> vertex) {
         if (!this.dict_V_edges.containsKey(vertex.getId()) && !this.dict_V_alone.containsKey(vertex.getId())) {
             this.vertices.add(vertex);
@@ -62,6 +64,7 @@ public class Graph_CSR_N<K, VV, EV> extends Graph<K, VV, EV> {
         }
     }
 
+    @Override
     public void addEdge(Edge<K, EV> edge) {
         // the source vertex of edge has no edges.
         if (!this.dict_V_edges.containsKey(edge.getSrcId())) {
@@ -90,6 +93,20 @@ public class Graph_CSR_N<K, VV, EV> extends Graph<K, VV, EV> {
     @Override
     public List<Edge<K, EV>> getEdge(K sid) {
         return this.edges.get(this.csr.get(this.dict_V_edges.get(sid)));
+    }
+
+    @Override
+    public void clear() {
+        this.csr.clear();
+        this.csr = null;
+        this.dict_V_alone.clear();
+        this.dict_V_alone = null;
+        this.dict_V_edges.clear();
+        this.dict_V_edges = null;
+        this.edges.clear();
+        this.edges = null;
+        this.vertices.clear();
+        this.vertices = null;
     }
 
     public List<Vertex<K, VV>> getVertices() {

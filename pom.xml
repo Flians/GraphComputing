@@ -19,6 +19,21 @@
     </properties>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/com.google.guava/guava
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>29.0-jre</version>
+        </dependency>
+        -->
+
+        <!-- https://mvnrepository.com/artifact/org.apache.lucene/lucene-core -->
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-core</artifactId>
+            <version>4.2.0</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/org.rocksdb/rocksdbjni -->
         <dependency>
             <groupId>org.rocksdb</groupId>
