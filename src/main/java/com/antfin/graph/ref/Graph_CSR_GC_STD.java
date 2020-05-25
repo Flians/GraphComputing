@@ -1,8 +1,8 @@
-package com.antfin;
+package com.antfin.graph.ref;
 
-import com.antfin.Graph;
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
+import com.antfin.graph.Graph;
 import com.antfin.util.BiHashMap;
 
 import java.util.*;

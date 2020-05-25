@@ -1,4 +1,4 @@
-package com.antfin;
+package com.antfin.graph;
 
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;

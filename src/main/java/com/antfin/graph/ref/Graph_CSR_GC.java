@@ -1,9 +1,9 @@
-package com.antfin;
+package com.antfin.graph.ref;
 
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
+import com.antfin.graph.Graph;
 import com.antfin.util.BiHashMap;
-import com.antfin.util.GraphHelper;
 
 import java.util.*;
 
@@ -23,7 +23,7 @@ import java.util.*;
  * @ProjectName graphRE
  * @date 2020/5/18 16:13
  */
-public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV>{
+public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
     private Map<K, Integer> dict_V;
     // store all targets. For i-th vertex in vertices, i = dict_V[sid] and targets[i][j] = dict_V[tid] - dict_V[sid]
     private List<List<Integer> > targets;

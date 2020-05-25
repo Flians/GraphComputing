@@ -1,7 +1,8 @@
-package com.antfin;
+package com.antfin.graph.ref;
 
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
+import com.antfin.graph.Graph;
 
 import java.util.List;
 import java.util.Map;
@@ -24,7 +25,7 @@ import java.util.Optional;
  * @ProjectName graphRE
  * @date 2020/5/14 16:37
  */
-public class Graph_CSR_N<K, VV, EV> extends Graph<K, VV, EV> {
+public class Graph_Map_CSR_N<K, VV, EV> extends Graph<K, VV, EV> {
     private List<Vertex<K, VV>> vertices;
     private List<List<Edge<K, EV> > > edges;
     // dict_V_edges[vertex.id] -> index, record the vertices with edges
@@ -34,7 +35,7 @@ public class Graph_CSR_N<K, VV, EV> extends Graph<K, VV, EV> {
     // csr[index] is the start position of the output edges of vertex in edges
     private List<Integer> csr;
 
-    public Graph_CSR_N() {
+    public Graph_Map_CSR_N() {
         this.vertices = new ArrayList<>();
         this.edges = new ArrayList<>();
         this.dict_V_edges = new HashMap<>();
@@ -42,7 +43,7 @@ public class Graph_CSR_N<K, VV, EV> extends Graph<K, VV, EV> {
         this.csr = new ArrayList<>();
     }
 
-    public Graph_CSR_N(List vg, boolean flag) {
+    public Graph_Map_CSR_N(List vg, boolean flag) {
         this();
         if (flag) {
             ((List<Vertex<K, VV>>) vg).forEach(this::addVertex);
@@ -51,7 +52,7 @@ public class Graph_CSR_N<K, VV, EV> extends Graph<K, VV, EV> {
         }
     }
 
-    public Graph_CSR_N(List<Vertex<K, VV>> vertices, List<Edge<K, EV>> edges) {
+    public Graph_Map_CSR_N(List<Vertex<K, VV>> vertices, List<Edge<K, EV>> edges) {
         this(vertices, true);
         edges.stream().forEach(this::addEdge);
     }

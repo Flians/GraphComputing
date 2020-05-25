@@ -1,7 +1,8 @@
-package com.antfin;
+package com.antfin.graph.ref;
 
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
+import com.antfin.graph.Graph;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +13,8 @@ import java.util.stream.Collectors;
 
 /**
  * @author Flians
- * @Description: The graph is described by two maps.
+ * @Description: The graph is described by edge list.
+ *               For strings, all instances with the same value point to the same String except for instances created by new String(arg).
  * @Title: Graph
  * @ProjectName graphRE
  * @date 2020/5/14 09:53
@@ -24,18 +26,18 @@ import java.util.stream.Collectors;
  *     The type of the Value of the Edge
  */
 
-public class Graph_TwoMap<K, VV, EV> extends Graph<K, VV, EV> {
+public class Graph_Map_EL<K, VV, EV> extends Graph<K, VV, EV> {
     // record all vertices; K -> vertex.id
     private Map<K, Vertex<K, VV> > vertices;
     // record all edges; K -> edge.source.id
     private Map<K, List<Edge<K, EV> > > edges;
 
-    public Graph_TwoMap() {
+    public Graph_Map_EL() {
         this.vertices = new HashMap<>();
         this.edges = new HashMap<>();
     }
 
-    public Graph_TwoMap(List vg, boolean flag) {
+    public Graph_Map_EL(List vg, boolean flag) {
         this();
         if (flag) {
             this.vertices = ((List<Vertex<K, VV>>)vg).stream().collect(Collectors.toMap(Vertex<K, VV>::getId, Function.identity(), (k1, k2) -> k1));
@@ -44,7 +46,7 @@ public class Graph_TwoMap<K, VV, EV> extends Graph<K, VV, EV> {
         }
     }
 
-    public Graph_TwoMap(List<Vertex<K, VV>> vertices, List<Edge<K, EV>> edges) {
+    public Graph_Map_EL(List<Vertex<K, VV>> vertices, List<Edge<K, EV>> edges) {
         this(vertices, true);
         edges.stream().forEach(this::addEdge);
     }
