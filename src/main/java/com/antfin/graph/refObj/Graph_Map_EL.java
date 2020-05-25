@@ -1,4 +1,4 @@
-package com.antfin.graph.ref;
+package com.antfin.graph.refObj;
 
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
@@ -58,16 +58,17 @@ public class Graph_Map_EL<K, VV, EV> extends Graph<K, VV, EV> {
         }
     }
 
+    public void addVertex(K id) {
+        if (!this.vertices.containsKey(id)) {
+            this.vertices.put(id, new Vertex(id));
+        }
+    }
+
     @Override
     public void addEdge(Edge<K, EV> edge) {
-        // new Vertex if srcId is not existed
-        if (!this.vertices.containsKey(edge.getSrcId())) {
-            this.vertices.put(edge.getSrcId(), new Vertex(edge.getSrcId()));
-        }
+        this.addVertex(edge.getSrcId());
         if (this.edges.containsKey(edge.getSrcId())) {
-            // prevent repetition
-            if (!this.edges.get(edge.getSrcId()).contains(edge))
-                this.edges.get(edge.getSrcId()).add(edge);
+            this.edges.get(edge.getSrcId()).add(edge);
         } else {
             List<Edge<K, EV> > temp = new ArrayList<>();
             temp.add(edge);

@@ -5,7 +5,8 @@ import com.antfin.arc.arch.message.graph.Vertex;
 import com.antfin.arch.cstore.benchmark.GraphGenerator;
 
 import com.antfin.graph.*;
-import com.antfin.graph.ref.*;
+import com.antfin.graph.refObj.*;
+import com.antfin.util.GraphVerify;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -17,7 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class GraphTest {
+public class GraphTest_Ref {
     Graph graph;
     List<Vertex<String, String>> vertices;
     List<Edge<String, String>> edges;
@@ -73,33 +74,13 @@ public class GraphTest {
         // verity the generated graph
         int numE = 0;
         for (Object key : ((Graph_Map_EL) this.graph).getVertices().keySet()) {
-            numE += verify((String) key);
+            numE += GraphVerify.verify((String)key, this.sTt, this.graph);
         }
         if (numE != this.uniqueE)
             System.out.println(" some edges are lost!");
 
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_EL) this.graph).getVertices()));
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_EL) this.graph).getEdges()));
-    }
-
-    @Test
-    public void test_Map_CSR_N() {
-        System.out.println(">>> Graph_Map_CSR_N");
-        this.graph = new Graph_Map_CSR_N(this.edges, false);
-
-        // verity the generated graph
-        int numE = 0;
-        for (Object v : ((Graph_Map_CSR_N) this.graph).getVertices()) {
-            numE += verify(((Vertex<String, String>) v).getId());
-        }
-        if (numE != this.uniqueE)
-            System.out.println(" some edges are lost!");
-
-        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR_N) this.graph).getVertices()));
-        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR_N) this.graph).getEdges()));
-        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR_N) this.graph).getDict_V_alone()));
-        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR_N) this.graph).getDict_V_edges()));
-        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR_N) this.graph).getCsr()));
     }
 
     @Test
@@ -110,7 +91,7 @@ public class GraphTest {
         // verity the generated graph
         int numE = 0;
         for (Object v : ((Graph_Map_CSR) this.graph).getVertices()) {
-            numE += verify(((Vertex<String, String>) v).getId());
+            numE += GraphVerify.verify(((Vertex<String, String>) v).getId(), this.sTt, this.graph);
         }
         if (numE != this.uniqueE)
             System.out.println(" some edges are lost!");
@@ -127,20 +108,11 @@ public class GraphTest {
         // verity the generated graph
         int numE = 0;
         for (Object key : ((Graph_CSR_EL_Map) this.graph).getDict_V().keySet()) {
-            numE += verify((String) key);
+            numE += GraphVerify.verify((String) key, this.sTt, this.graph);
         }
         if (numE != this.uniqueE)
             System.out.println(" some edges are lost!");
 
-        System.out.println(">>> After reordering");
-
-        // verity the reordered graph
-        numE = 0;
-        for (Object key : ((Graph_CSR_EL_Map) this.graph).getDict_V().keySet()) {
-            numE += verify((String) key);
-        }
-        if (numE != this.uniqueE)
-            System.out.println("Some edges are lost!");
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_EL_Map) this.graph).getDict_V()));
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_EL_Map) this.graph).getTargets()));
     }
@@ -153,20 +125,11 @@ public class GraphTest {
         // verity the generated graph
         int numE = 0;
         for (Object key : ((Graph_CSR_EL_List) this.graph).getDict_V().keySet()) {
-            numE += verify((String) key);
+            numE += GraphVerify.verify((String) key, this.sTt, this.graph);
         }
         if (numE != this.uniqueE)
             System.out.println(" some edges are lost!");
 
-        System.out.println(">>> After reordering");
-
-        // verity the reordered graph
-        numE = 0;
-        for (Object key : ((Graph_CSR_EL_List) this.graph).getDict_V().keySet()) {
-            numE += verify((String) key);
-        }
-        if (numE != this.uniqueE)
-            System.out.println("Some edges are lost!");
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_EL_List) this.graph).getDict_V()));
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_EL_List) this.graph).getTargets()));
     }
@@ -179,7 +142,7 @@ public class GraphTest {
         // verity the generated graph
         int numE = 0;
         for (Object key : ((Graph_CSR_GC) this.graph).getDict_V().keySet()) {
-            numE += verify((String) key);
+            numE += GraphVerify.verify((String) key, this.sTt, this.graph);
         }
         if (numE != this.uniqueE)
             System.out.println(" some edges are lost!");
@@ -190,7 +153,7 @@ public class GraphTest {
         // verity the reordered graph
         numE = 0;
         for (Object key : ((Graph_CSR_GC) this.graph).getDict_V().keySet()) {
-            numE += verify((String) key);
+            numE += GraphVerify.verify((String) key, this.sTt, this.graph);
         }
         if (numE != this.uniqueE)
             System.out.println("Some edges are lost!");
@@ -207,7 +170,7 @@ public class GraphTest {
         // verity the generated graph
         int numE = 0;
         for (Object key : ((Graph_CSR_GC_STD) this.graph).getDict_V().keySet()) {
-            numE += verify((String) key);
+            numE += GraphVerify.verify((String) key, this.sTt, this.graph);
         }
         if (numE != this.uniqueE)
             System.out.println(" some edges are lost!");
@@ -218,7 +181,7 @@ public class GraphTest {
         // verity the reordered graph
         numE = 0;
         for (Object key : ((Graph_CSR_GC_STD) this.graph).getDict_V().keySet()) {
-            numE += verify((String) key);
+            numE += GraphVerify.verify((String) key, this.sTt,this.graph);
         }
         if (numE != this.uniqueE)
             System.out.println("Some edges are lost!");
@@ -227,32 +190,27 @@ public class GraphTest {
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_STD) this.graph).getCsr()));
     }
 
-    public int verify(String key) {
+
+
+    /*
+    @Test
+    public void test_Map_CSR_N() {
+        System.out.println(">>> Graph_Map_CSR_N");
+        this.graph = new Graph_Map_CSR_N(this.edges, false);
+
+        // verity the generated graph
         int numE = 0;
-        if (this.sTt.containsKey(key)) {
-            numE = ((List) graph.getEdge(key)).size();
-            if (this.graph instanceof Graph_CSR_EL_Map || this.graph instanceof Graph_CSR_EL_List || this.graph instanceof Graph_CSR_GC || this.graph instanceof Graph_CSR_GC_STD) {
-                int sid = (int) this.graph.getVertex(key);
-                for (Integer gap : ((List<Integer>) graph.getEdge(key))) {
-                    if (!(this.graph instanceof Graph_CSR_EL_Map) && !(this.graph instanceof Graph_CSR_EL_List)) {
-                        gap += sid;
-                    }
-                    if (!this.sTt.get(key).containsKey(this.graph.getVertex(gap))) {
-                        System.out.println("<" + key + "," + this.graph.getVertex(gap) + "> is not existed!");
-                    }
-                    if (this.graph instanceof Graph_CSR_GC_STD)
-                        sid = gap;
-                }
-            } else {
-                ((List<Edge<String, String>>) graph.getEdge(key)).forEach(e -> {
-                    if (!this.sTt.get(key).containsKey(e.getTargetId())) {
-                        System.out.println("<" + key + "," + e.getTargetId() + "> is not existed!");
-                    }
-                });
-            }
-        } else {
-            // System.out.println(key + " has no output edges!");
+        for (Object v : ((Graph_Map_CSR_N) this.graph).getVertices()) {
+            numE += GraphVerify.verify(((Vertex<String, String>) v).getId(), this.sTt,this.graph);
         }
-        return numE;
+        if (numE != this.uniqueE)
+            System.out.println(" some edges are lost!");
+
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR_N) this.graph).getVertices()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR_N) this.graph).getEdges()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR_N) this.graph).getDict_V_alone()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR_N) this.graph).getDict_V_edges()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR_N) this.graph).getCsr()));
     }
+     */
 }

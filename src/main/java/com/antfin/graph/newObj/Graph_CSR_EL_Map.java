@@ -1,4 +1,4 @@
-package com.antfin.graph.ref;
+package com.antfin.graph.newObj;
 
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
@@ -6,13 +6,13 @@ import com.antfin.graph.Graph;
 import com.antfin.util.BiHashMap;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * @author Flians
- * @Description: The graph is described by edge list.
- *               For strings, all instances with the same value point to the same String except for instances created by new String(ar).
+ * @Description: Compare the corresponding method in refObj.
  * @Title: Graph
  * @ProjectName graphRE
  * @date 2020/5/25 10:30
@@ -24,18 +24,18 @@ import java.util.Map;
  *     The type of the Value of the Edge
  */
 
-public class Graph_CSR_EL_List<K, VV, EV> extends Graph<K, VV, EV> {
+public class Graph_CSR_EL_Map<K, VV, EV> extends Graph<K, VV, EV> {
     // record all vertices; K -> vertex.id
     private Map<K, Integer > dict_V;
     // record all edges; K -> edge.source.id
-    private List<List<Integer> > targets;
+    private Map<Integer, List<Integer> > targets;
 
-    public Graph_CSR_EL_List() {
+    public Graph_CSR_EL_Map() {
         this.dict_V = new BiHashMap<>();
-        this.targets = new ArrayList<>();
+        this.targets = new HashMap<>();
     }
 
-    public Graph_CSR_EL_List(List vg, boolean flag) {
+    public Graph_CSR_EL_Map(List vg, boolean flag) {
         this();
         if (flag) {
             ((List<Vertex<K, VV>>) vg).forEach(this::addVertex);
@@ -44,7 +44,7 @@ public class Graph_CSR_EL_List<K, VV, EV> extends Graph<K, VV, EV> {
         }
     }
 
-    public Graph_CSR_EL_List(List<Vertex<K, VV>> vertices, List<Edge<K, EV>> edges) {
+    public Graph_CSR_EL_Map(List<Vertex<K, VV>> vertices, List<Edge<K, EV>> edges) {
         this(vertices, true);
         edges.stream().forEach(this::addEdge);
     }
@@ -57,7 +57,6 @@ public class Graph_CSR_EL_List<K, VV, EV> extends Graph<K, VV, EV> {
     public void addVertex(K id) {
         if (!this.dict_V.containsKey(id)) {
             this.dict_V.put(id, this.dict_V.size());
-            this.targets.add(new ArrayList<>());
         }
     }
 
@@ -65,7 +64,14 @@ public class Graph_CSR_EL_List<K, VV, EV> extends Graph<K, VV, EV> {
     public void addEdge(Edge<K, EV> edge) {
         this.addVertex(edge.getSrcId());
         this.addVertex(edge.getTargetId());
-        this.targets.get(this.dict_V.get(edge.getSrcId())).add(this.dict_V.get(edge.getTargetId()));
+        Integer sid= this.dict_V.get(edge.getSrcId());
+        if (this.targets.containsKey(sid)) {
+            this.targets.get(sid).add(new Integer(this.dict_V.get(edge.getTargetId())));
+        } else {
+            List<Integer > temp = new ArrayList<>();
+            temp.add(new Integer(this.dict_V.get(edge.getTargetId())));
+            this.targets.put(sid, temp);
+        }
     }
 
     @Override
@@ -98,7 +104,7 @@ public class Graph_CSR_EL_List<K, VV, EV> extends Graph<K, VV, EV> {
         return dict_V;
     }
 
-    public List<List<Integer> > getTargets() {
+    public Map<Integer, List<Integer> > getTargets() {
         return this.targets;
     }
 }

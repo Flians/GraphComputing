@@ -1,4 +1,4 @@
-package com.antfin.graph.ref;
+package com.antfin.graph.refObj;
 
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
@@ -112,18 +112,16 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
         List<Integer> id_V = new ArrayList<>(this.dict_V.size());
         for (int i=0; i<this.dict_V.size(); ++i)
             id_V.add(i);
-        Collections.sort(id_V, new Comparator<Integer>() {
-            public int compare(Integer o1, Integer o2) {
-                Integer d1=0, d2=0;
-                if (csr.get(o1) != -1)
-                    d1 = targets.get(csr.get(o1)).size();
-                if (csr.get(o2) != -1)
-                    d2 = targets.get(csr.get(o2)).size();
-                if (d1==d2) {
-                    return o1 < o2?-1:1;
-                } else {
-                    return d1 < d2 ? 1 : -1;
-                }
+        Collections.sort(id_V, (o1, o2) -> {
+            Integer d1=0, d2=0;
+            if (csr.get(o1) != -1)
+                d1 = targets.get(csr.get(o1)).size();
+            if (csr.get(o2) != -1)
+                d2 = targets.get(csr.get(o2)).size();
+            if (d1==d2) {
+                return o1 < o2?-1:1;
+            } else {
+                return d1 < d2 ? 1 : -1;
             }
         });
 
@@ -135,6 +133,7 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
             if (id_new[vid] == -1) {
                 id_new[vid] = cur_idx++;
                 Vs.add(vid);
+                int levelSize = 1;
                 while (!Vs.isEmpty()) {
                     // Vertex has output edges
                     if (this.csr.get(Vs.peek()) != -1) {
@@ -147,6 +146,22 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
                         }
                     }
                     Vs.poll();
+                    --levelSize;
+                    if (levelSize==0) {
+                        Collections.sort((List)Vs, (Comparator<Integer>) (o1, o2) -> {
+                            Integer d1 = 0, d2 = 0;
+                            if (csr.get(o1) != -1)
+                                d1 = targets.get(csr.get(o1)).size();
+                            if (csr.get(o2) != -1)
+                                d2 = targets.get(csr.get(o2)).size();
+                            if (d1 == d2) {
+                                return o1 < o2 ? -1 : 1;
+                            } else {
+                                return d1 < d2 ? -1 : 1;
+                            }
+                        });
+                        levelSize = Vs.size();
+                    }
                 }
             }
         }
