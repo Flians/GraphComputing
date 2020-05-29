@@ -3,16 +3,11 @@ package com.antfin;
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
 import com.antfin.arch.cstore.benchmark.GraphGenerator;
-
-import com.antfin.graph.*;
+import com.antfin.graph.Graph;
 import com.antfin.graph.refObj.*;
 import com.antfin.util.GraphVerify;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -74,7 +69,7 @@ public class GraphTest_Ref {
         // verity the generated graph
         int numE = 0;
         for (Object key : ((Graph_Map_EL) this.graph).getVertices().keySet()) {
-            numE += GraphVerify.verify((String)key, this.sTt, this.graph);
+            numE += GraphVerify.verify((String) key, this.sTt, this.graph);
         }
         if (numE != this.uniqueE)
             System.out.println(" some edges are lost!");
@@ -135,6 +130,62 @@ public class GraphTest_Ref {
     }
 
     @Test
+    public void test_CSR_GC_Son() {
+        System.out.println(">>> Graph_CSR_GC_Son");
+        this.graph = new Graph_CSR_GC_Son(this.edges, false);
+
+        // verity the generated graph
+        int numE = 0;
+        for (Object key : ((Graph_CSR_GC_Son) this.graph).getDict_V().keySet()) {
+            numE += GraphVerify.verify((String) key, this.sTt, this.graph);
+        }
+        if (numE != this.uniqueE)
+            System.out.println(" some edges are lost!");
+
+        System.out.println(">>> After reordering");
+        System.out.println("max gap: " + ((Graph_CSR_GC_Son) this.graph).reorder_BFS());
+
+        // verity the reordered graph
+        numE = 0;
+        for (Object key : ((Graph_CSR_GC_Son) this.graph).getDict_V().keySet()) {
+            numE += GraphVerify.verify((String) key, this.sTt, this.graph);
+        }
+        if (numE != this.uniqueE)
+            System.out.println("Some edges are lost!");
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_Son) this.graph).getDict_V()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_Son) this.graph).getTargets()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_Son) this.graph).getCsr()));
+    }
+
+    @Test
+    public void test_CSR_GC_Brother() {
+        System.out.println(">>> Graph_CSR_GC_Brother");
+        this.graph = new Graph_CSR_GC_Brother(this.edges, false);
+
+        // verity the generated graph
+        int numE = 0;
+        for (Object key : ((Graph_CSR_GC_Brother) this.graph).getDict_V().keySet()) {
+            numE += GraphVerify.verify((String) key, this.sTt, this.graph);
+        }
+        if (numE != this.uniqueE)
+            System.out.println(" some edges are lost!");
+
+        System.out.println(">>> After reordering");
+        System.out.println("max gap: " + ((Graph_CSR_GC_Brother) this.graph).reorder_BFS());
+
+        // verity the reordered graph
+        numE = 0;
+        for (Object key : ((Graph_CSR_GC_Brother) this.graph).getDict_V().keySet()) {
+            numE += GraphVerify.verify((String) key, this.sTt, this.graph);
+        }
+        if (numE != this.uniqueE)
+            System.out.println("Some edges are lost!");
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_Brother) this.graph).getDict_V()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_Brother) this.graph).getTargets()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_Brother) this.graph).getCsr()));
+    }
+
+    @Test
     public void test_CSR_GC() {
         System.out.println(">>> Graph_CSR_GC");
         this.graph = new Graph_CSR_GC(this.edges, false);
@@ -159,37 +210,7 @@ public class GraphTest_Ref {
             System.out.println("Some edges are lost!");
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC) this.graph).getDict_V()));
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC) this.graph).getTargets()));
-        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC) this.graph).getCsr()));
     }
-
-    @Test
-    public void test_CSR_GC_STD() {
-        System.out.println(">>> Graph_CSR_GC_STD");
-        this.graph = new Graph_CSR_GC_STD(this.edges, false);
-
-        // verity the generated graph
-        int numE = 0;
-        for (Object key : ((Graph_CSR_GC_STD) this.graph).getDict_V().keySet()) {
-            numE += GraphVerify.verify((String) key, this.sTt, this.graph);
-        }
-        if (numE != this.uniqueE)
-            System.out.println(" some edges are lost!");
-
-        System.out.println(">>> After reordering");
-        System.out.println("max gap: " + ((Graph_CSR_GC_STD) this.graph).reorder_BFS());
-
-        // verity the reordered graph
-        numE = 0;
-        for (Object key : ((Graph_CSR_GC_STD) this.graph).getDict_V().keySet()) {
-            numE += GraphVerify.verify((String) key, this.sTt,this.graph);
-        }
-        if (numE != this.uniqueE)
-            System.out.println("Some edges are lost!");
-        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_STD) this.graph).getDict_V()));
-        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_STD) this.graph).getTargets()));
-        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_STD) this.graph).getCsr()));
-    }
-
 
 
     /*

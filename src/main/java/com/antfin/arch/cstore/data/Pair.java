@@ -16,6 +16,10 @@ public class Pair<U, V> {
         this.f1 = second;
     }
 
+    public static <U, V> Pair<U, V> of(U a, V b) {
+        return new Pair<>(a, b);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -38,9 +42,5 @@ public class Pair<U, V> {
     @Override
     public String toString() {
         return "(" + f0 + ", " + f1 + ")";
-    }
-
-    public static <U, V> Pair<U, V> of(U a, V b) {
-        return new Pair<>(a, b);
     }
 }

@@ -1,4 +1,4 @@
-package com.antfin.graph.refObj;
+package com.antfin.graph.newObj;
 
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
@@ -13,15 +13,7 @@ import java.util.*;
  * @param <VV>
  * @param <EV>
  * @author Flians
- * @Description: The graph is described by Compressed Sparse Row (CSR).
- * When the vertex is assigned to a edge, it is saved into Map dict_V<vertex_id, value>.
- * For adding a edge by the id of the source v, the complexity is O(Degree(v))
- * For a Vertex with id = sid, dict_V[sid] is the index of its edges in targets.
- * If i = dict_V[sid], the first vertex connected by this vertex has the following relationship:
- *      targets[i][j] = dict_V[tid] - dict_V[sid]
- * and other vertices connected by this vertex has the following relationship:
- *      dict_V[tid] = SUM(targets[i][j]) + dict_V[sid], j in [0,targets[i].size())
- * For reducing the targets[i][j], make the source as close to the first sink as possible, and make the adjacent sink close
+ * @Description: Compare the corresponding method in refObj.
  * @Title: Graph_CSR_GC
  * @ProjectName graphRE
  * @date 2020/5/18 16:13
@@ -30,10 +22,12 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
     private Map<K, Integer> dict_V;
     // store all targets. For i-th vertex in vertices, i = dict_V[sid] and targets[i][j] = dict_V[tid] - dict_V[sid]
     private List<List<byte[]>> targets;
+    private List<List<byte[]>> sources;
 
     public Graph_CSR_GC() {
         this.dict_V = new BiHashMap<>();
         this.targets = new ArrayList<>();
+        this.sources = new ArrayList<>();
     }
 
     public Graph_CSR_GC(List vg, boolean flag) {
@@ -57,8 +51,10 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
 
     public void addVertex(K id) {
         if (!this.dict_V.containsKey(id)) {
-            this.dict_V.put(id, this.dict_V.size());
+            String newId = new String((String) id);
+            this.dict_V.put((K) newId, this.dict_V.size());
             this.targets.add(new ArrayList<byte[]>());
+            this.sources.add(new ArrayList<byte[]>());
         }
     }
 
@@ -76,6 +72,18 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
             }
             // the source vertex of edge has other edges.
             this.targets.get(this.dict_V.get(edge.getSrcId())).add(GraphHelper.intToByteArray(this.dict_V.get(edge.getTargetId()) - before));
+        }
+
+        // the source vertex of edge has no edges.
+        if (this.sources.get(this.dict_V.get(edge.getTargetId())).isEmpty()) {
+            this.sources.get(this.dict_V.get(edge.getTargetId())).add(GraphHelper.intToByteArray(this.dict_V.get(edge.getSrcId()) - this.dict_V.get(edge.getTargetId())));
+        } else {
+            int before = this.dict_V.get(edge.getTargetId());
+            for (byte[] i : this.sources.get(this.dict_V.get(edge.getTargetId()))) {
+                before += GraphHelper.byteArrayToInt(i);
+            }
+            // the source vertex of edge has other edges.
+            this.sources.get(this.dict_V.get(edge.getTargetId())).add(GraphHelper.intToByteArray(this.dict_V.get(edge.getSrcId()) - before));
         }
     }
 
@@ -115,9 +123,9 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
         Collections.sort(id_V, (o1, o2) -> {
             Integer d1 = 0, d2 = 0;
             if (!this.getTargets().get(o1).isEmpty())
-                d1 = targets.get(o1).size();
+                d1 = targets.get(o1).size() - sources.get(o1).size();
             if (!this.getTargets().get(o2).isEmpty())
-                d2 = targets.get(o2).size();
+                d2 = targets.get(o2).size() - sources.get(o2).size();
             if (d1 == d2) {
                 return o1 < o2 ? -1 : 1;
             } else {
@@ -148,13 +156,14 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
                     }
                     Vs.poll();
                     --levelSize;
+
                     if (levelSize == 0) {
                         Collections.sort((List) Vs, (Comparator<Integer>) (o1, o2) -> {
                             Integer d1 = 0, d2 = 0;
                             if (!this.getTargets().get(o1).isEmpty())
-                                d1 = targets.get(o1).size();
+                                d1 = targets.get(o1).size() - sources.get(o1).size();
                             if (!this.getTargets().get(o2).isEmpty())
-                                d2 = targets.get(o2).size();
+                                d2 = targets.get(o2).size() - sources.get(o2).size();
                             if (d1 == d2) {
                                 return o1 < o2 ? -1 : 1;
                             } else {
@@ -163,12 +172,12 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
                         });
                         levelSize = Vs.size();
                     }
+
+
                 }
             }
         }
         Vs = null;
-        id_V.clear();
-        id_V = null;
 
         Iterator<String> it = (Iterator<String>) this.dict_V.keySet().iterator();
         while (it.hasNext()) {
@@ -178,18 +187,13 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
         }
 
         int maxGap = 0;
-        List<List<byte[]>> newTargets = new ArrayList<>(this.targets.size());
-        for (int i=0; i<this.targets.size(); i++) {
-            newTargets.add(null);
-        }
         for (int sid = 0; sid < this.targets.size(); sid++) {
             if (!this.targets.get(sid).isEmpty())
                 maxGap = Math.max(Math.abs(maxGap), Math.abs(this.adjustTarget(sid, this.targets.get(sid), id_new)));
-            newTargets.set(id_new[sid], this.targets.get(sid));
         }
-        this.targets.clear();
-        this.targets = newTargets;
         id_new = null;
+        id_V.clear();
+        id_V = null;
         return maxGap;
     }
 

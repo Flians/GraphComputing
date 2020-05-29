@@ -5,10 +5,14 @@ import com.antfin.arc.arch.message.graph.Vertex;
 import com.antfin.arch.cstore.benchmark.GraphGenerator;
 import com.antfin.graph.Graph;
 import com.antfin.graph.newObj.*;
+import com.antfin.util.GraphHelper;
+import com.antfin.util.GraphVerify;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.junit.*;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +66,40 @@ public class GraphTest_New {
     }
 
     @Test
+    public void test_Map_EL() {
+        System.out.println(">>> Graph_Map_EL");
+        this.graph = new Graph_Map_EL(this.edges, false);
+
+        // verity the generated graph
+        int numE = 0;
+        for (Object key : ((Graph_Map_EL) this.graph).getVertices().keySet()) {
+            numE += GraphVerify.verify((String) key, this.sTt, this.graph);
+        }
+        if (numE != this.uniqueE)
+            System.out.println(" some edges are lost!");
+
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_EL) this.graph).getVertices()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_EL) this.graph).getEdges()));
+    }
+
+    @Test
+    public void test_Map_CSR() {
+        System.out.println(">>> Graph_Map_CSR");
+        this.graph = new Graph_Map_CSR(this.edges, false);
+
+        // verity the generated graph
+        int numE = 0;
+        for (Object v : ((Graph_Map_CSR) this.graph).getVertices()) {
+            numE += GraphVerify.verify(((Vertex<String, String>) v).getId(), this.sTt, this.graph);
+        }
+        if (numE != this.uniqueE)
+            System.out.println(" some edges are lost!");
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR) this.graph).getVertices()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR) this.graph).getEdges()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR) this.graph).getDict_V()));
+    }
+
+    @Test
     public void test_EL() {
         System.out.println(">>> Graph_EL");
         this.graph = new Graph_EL(this.edges, false);
@@ -76,7 +114,7 @@ public class GraphTest_New {
 
         FileWriter fw = new FileWriter(new File("graph.txt"));
         ((Graph_CSR_EL_Map) this.graph).getTargets().forEach((key, value) -> {
-            ((List)value).forEach(t->{
+            ((List) value).forEach(t -> {
                 try {
                     fw.write(key + "," + t + "\n");
                 } catch (IOException e) {
@@ -87,16 +125,52 @@ public class GraphTest_New {
 
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_EL_Map) this.graph).getDict_V()));
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_EL_Map) this.graph).getTargets()));
+        int num = ((Graph_CSR_EL_Map) this.graph).getTargets().values().stream().mapToInt(item -> ((List) item).size()).sum();
+        System.out.println(((Graph_CSR_EL_Map) this.graph).getTargets().size());
+        System.out.println("num: " + num + "; size: " + RamUsageEstimator.humanSizeOf(((Graph_CSR_EL_Map) this.graph).getTargets().entrySet().iterator().next()));
     }
 
     @Test
-    public void test_CSR_GC_STD() {
-        System.out.println(">>> Graph_CSR_GC_STD");
-        this.graph = new Graph_CSR_GC_STD(this.edges, false);
+    public void test_CSR_GC_Brother() {
+        System.out.println(">>> Graph_CSR_GC_Brother");
+        this.graph = new Graph_CSR_GC_Brother(this.edges, false);
+        long nums[] = GraphHelper.countEdgesBytes(((Graph_CSR_GC_Brother) this.graph).getTargets());
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_Brother) this.graph).getDict_V()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_Brother) this.graph).getTargets()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_Brother) this.graph).getCsr()));
+        System.out.println("Integer: " + nums[0]*16 + " byte; Byte: " +nums[1]*4 + " byte");
+        System.out.println("Integer: " + GraphHelper.convert(nums[0]*16.0/RamUsageEstimator.ONE_MB) + " MB; byte: " + GraphHelper.convert(nums[1]*4.0/RamUsageEstimator.ONE_MB) + " MB");
+        System.out.println("The number of byte reducing is " + nums[2] + ", " + GraphHelper.convert((double)(nums[2])/RamUsageEstimator.ONE_MB) + " MB");
+        System.out.println("Memory size: " + RamUsageEstimator.humanSizeOf(this.graph));
 
-        System.out.println("max gap: " + ((Graph_CSR_GC_STD) this.graph).reorder_BFS());
+        System.out.println(">>> After reordering");
+        System.out.println("max gap: " + ((Graph_CSR_GC_Brother) this.graph).reorder_BFS());
+        nums = GraphHelper.countEdgesBytes(((Graph_CSR_GC_Brother) this.graph).getTargets());
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_Brother) this.graph).getDict_V()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_Brother) this.graph).getTargets()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_Brother) this.graph).getCsr()));
+        System.out.println("Integer: " + nums[0]*16 + " byte; Byte: " +nums[1]*4 + " byte");
+        System.out.println("Integer: " + GraphHelper.convert(nums[0]*16.0/RamUsageEstimator.ONE_MB) + "; byte: " + GraphHelper.convert(nums[1]*4.0/RamUsageEstimator.ONE_MB));
+        System.out.println("The number of byte reducing is " + nums[2] + ", " + GraphHelper.convert((double)(nums[2])/RamUsageEstimator.ONE_MB) + "MB");
+    }
 
-        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_STD) this.graph).getDict_V()));
-        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC_STD) this.graph).getTargets()));
+    @Test
+    public void test_CSR_GC() {
+        System.out.println(">>> Graph_CSR_GC");
+        this.graph = new Graph_CSR_GC(this.edges, false);
+        long nums[] = GraphHelper.countEdgesBytes(((Graph_CSR_GC) this.graph).getTargets());
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC) this.graph).getDict_V()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC) this.graph).getTargets()));
+        System.out.println("Integer: " + nums[0]*16 + " byte; Byte: " +nums[1]*4 + " byte");
+        System.out.println("The number of byte reducing is " + nums[2] + ", " + GraphHelper.convert((double)(nums[2])/RamUsageEstimator.ONE_MB) + " MB");
+        System.out.println("Memory size: " + RamUsageEstimator.humanSizeOf(this.graph));
+
+        System.out.println(">>> After reordering");
+        System.out.println("max gap: " + ((Graph_CSR_GC) this.graph).reorder_BFS());
+        nums = GraphHelper.countEdgesBytes(((Graph_CSR_GC) this.graph).getTargets());
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC) this.graph).getDict_V()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_CSR_GC) this.graph).getTargets()));
+        System.out.println("Integer: " + nums[0]*16 + " byte; Byte: " +nums[1]*4 + " byte");
+        System.out.println("The number of byte reducing is " + nums[2] + ", " + GraphHelper.convert((double)(nums[2])/RamUsageEstimator.ONE_MB) + "MB");
     }
 }

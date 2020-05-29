@@ -4,11 +4,7 @@ import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
 import com.antfin.graph.Graph;
 
-import java.util.List;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @param <K>
@@ -19,15 +15,15 @@ import java.util.Optional;
  * To reduce the space of List csr, Map dict_V_alone is used to save the isolated vertices.
  * When this vertex is assigned to a edge, it is saved into Map dict_V_edges, and this edge is mapped into List csr.
  * Not good:
- *          O(N) for querying the vertex.
- *          There are duplicate edges in edges
+ *      O(N) for querying the vertex.
+ *      There are duplicate edges in edges
  * @Title: Graph
  * @ProjectName graphRE
  * @date 2020/5/14 16:37
  */
 public class Graph_Map_CSR_N<K, VV, EV> extends Graph<K, VV, EV> {
     private List<Vertex<K, VV>> vertices;
-    private List<List<Edge<K, EV> > > edges;
+    private List<List<Edge<K, EV>>> edges;
     // dict_V_edges[vertex.id] -> index, record the vertices with edges
     private Map<K, Integer> dict_V_edges;
     // dict_V_alone[vertex.id] -> index, record the the vertices without edges
@@ -76,7 +72,7 @@ public class Graph_Map_CSR_N<K, VV, EV> extends Graph<K, VV, EV> {
             }
             this.dict_V_edges.put(edge.getSrcId(), this.csr.size());
             this.csr.add(this.edges.size());
-            List<Edge<K, EV> > item = new ArrayList<>();
+            List<Edge<K, EV>> item = new ArrayList<>();
             item.add(edge);
             this.edges.add(item);
         } else {
@@ -114,7 +110,7 @@ public class Graph_Map_CSR_N<K, VV, EV> extends Graph<K, VV, EV> {
         return this.vertices;
     }
 
-    public List<List<Edge<K, EV> > > getEdges() {
+    public List<List<Edge<K, EV>>> getEdges() {
         return this.edges;
     }
 

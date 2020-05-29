@@ -4,7 +4,6 @@ import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
 import com.antfin.graph.Graph;
 import com.antfin.util.BiHashMap;
-import com.antfin.util.GraphHelper;
 
 import java.util.*;
 
@@ -15,28 +14,28 @@ import java.util.*;
  * @author Flians
  * @Description: The graph is described by Compressed Sparse Row (CSR).
  * When the vertex is assigned to a edge, it is saved into Map dict_V<vertex_id, value>.
- * For adding a edge by the id of the source v, the complexity is O(Degree(v))
- * For a Vertex with id = sid, dict_V[sid] is the index of its edges in targets.
- * If i = dict_V[sid], the first vertex connected by this vertex has the following relationship:
+ * For adding a edge by the id of the source v, the complexity is O(1)
+ * For a Vertex with id = sid, csr[dict_V[sid]] is the index of its edges in targets.
+ * If i = csr[dict_V[sid]], the j-th vertex connected by this vertex has the following relationship:
  *      targets[i][j] = dict_V[tid] - dict_V[sid]
- * and other vertices connected by this vertex has the following relationship:
- *      dict_V[tid] = SUM(targets[i][j]) + dict_V[sid], j in [0,targets[i].size())
- * For reducing the targets[i][j], make the source as close to the first sink as possible, and make the adjacent sink close
+ * For reducing the targets[i][j], make the source as close to the each sink as possible
  * @Title: Graph_CSR_GC
  * @ProjectName graphRE
  * @date 2020/5/18 16:13
  */
-public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
+public class Graph_CSR_GC_Son<K, VV, EV> extends Graph<K, VV, EV> {
     private Map<K, Integer> dict_V;
     // store all targets. For i-th vertex in vertices, i = dict_V[sid] and targets[i][j] = dict_V[tid] - dict_V[sid]
-    private List<List<byte[]>> targets;
+    private List<List<Integer>> targets;
+    private List<Integer> csr;
 
-    public Graph_CSR_GC() {
+    public Graph_CSR_GC_Son() {
         this.dict_V = new BiHashMap<>();
         this.targets = new ArrayList<>();
+        this.csr = new ArrayList<>();
     }
 
-    public Graph_CSR_GC(List vg, boolean flag) {
+    public Graph_CSR_GC_Son(List vg, boolean flag) {
         this();
         if (flag) {
             ((List<Vertex<K, VV>>) vg).forEach(this::addVertex);
@@ -45,7 +44,7 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
         }
     }
 
-    public Graph_CSR_GC(List<Vertex<K, VV>> vertices, List<Edge<K, EV>> edges) {
+    public Graph_CSR_GC_Son(List<Vertex<K, VV>> vertices, List<Edge<K, EV>> edges) {
         this(vertices, true);
         edges.stream().forEach(this::addEdge);
     }
@@ -58,7 +57,7 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
     public void addVertex(K id) {
         if (!this.dict_V.containsKey(id)) {
             this.dict_V.put(id, this.dict_V.size());
-            this.targets.add(new ArrayList<byte[]>());
+            this.csr.add(-1);
         }
     }
 
@@ -67,15 +66,14 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
         this.addVertex(edge.getSrcId());
         this.addVertex(edge.getTargetId());
         // the source vertex of edge has no edges.
-        if (this.targets.get(this.dict_V.get(edge.getSrcId())).isEmpty()) {
-            this.targets.get(this.dict_V.get(edge.getSrcId())).add(GraphHelper.intToByteArray(this.dict_V.get(edge.getTargetId()) - this.dict_V.get(edge.getSrcId())));
+        if (this.csr.get(this.dict_V.get(edge.getSrcId())) == -1) {
+            this.csr.set(this.dict_V.get(edge.getSrcId()), this.targets.size());
+            List<Integer> item = new ArrayList<>();
+            item.add(this.dict_V.get(edge.getTargetId()) - this.dict_V.get(edge.getSrcId()));
+            this.targets.add(item);
         } else {
-            int before = this.dict_V.get(edge.getSrcId());
-            for (byte[] i : this.targets.get(this.dict_V.get(edge.getSrcId()))) {
-                before += GraphHelper.byteArrayToInt(i);
-            }
             // the source vertex of edge has other edges.
-            this.targets.get(this.dict_V.get(edge.getSrcId())).add(GraphHelper.intToByteArray(this.dict_V.get(edge.getTargetId()) - before));
+            this.targets.get(this.csr.get(this.dict_V.get(edge.getSrcId()))).add(this.dict_V.get(edge.getTargetId()) - this.dict_V.get(edge.getSrcId()));
         }
     }
 
@@ -93,9 +91,9 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
     }
 
     @Override
-    public List<byte[]> getEdge(K sid) {
-        if (!this.targets.get(this.dict_V.get(sid)).isEmpty())
-            return this.getTargets().get(this.dict_V.get(sid));
+    public List<Integer> getEdge(K sid) {
+        if (this.csr.get(this.dict_V.get(sid)) != -1)
+            return this.getTargets().get(this.csr.get(this.dict_V.get(sid)));
         return null;
     }
 
@@ -105,6 +103,8 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
         this.dict_V = null;
         this.targets.clear();
         this.targets = null;
+        this.csr.clear();
+        this.csr = null;
     }
 
     public int reorder_BFS() {
@@ -114,10 +114,10 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
             id_V.add(i);
         Collections.sort(id_V, (o1, o2) -> {
             Integer d1 = 0, d2 = 0;
-            if (!this.getTargets().get(o1).isEmpty())
-                d1 = targets.get(o1).size();
-            if (!this.getTargets().get(o2).isEmpty())
-                d2 = targets.get(o2).size();
+            if (csr.get(o1) != -1)
+                d1 = targets.get(csr.get(o1)).size();
+            if (csr.get(o2) != -1)
+                d2 = targets.get(csr.get(o2)).size();
             if (d1 == d2) {
                 return o1 < o2 ? -1 : 1;
             } else {
@@ -136,10 +136,9 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
                 int levelSize = Vs.size();
                 while (!Vs.isEmpty()) {
                     // Vertex has output edges
-                    if (!this.getTargets().get(Vs.peek()).isEmpty()) {
-                        Integer tarInt = Vs.peek();
-                        for (byte[] tar : this.targets.get(Vs.peek())) {
-                            tarInt += GraphHelper.byteArrayToInt(tar);
+                    if (this.csr.get(Vs.peek()) != -1) {
+                        for (Integer tar : this.targets.get(this.csr.get(Vs.peek()))) {
+                            Integer tarInt = tar + Vs.peek();
                             if (id_new[tarInt] == -1) {
                                 id_new[tarInt] = cur_idx++;
                                 Vs.add(tarInt);
@@ -151,10 +150,10 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
                     if (levelSize == 0) {
                         Collections.sort((List) Vs, (Comparator<Integer>) (o1, o2) -> {
                             Integer d1 = 0, d2 = 0;
-                            if (!this.getTargets().get(o1).isEmpty())
-                                d1 = targets.get(o1).size();
-                            if (!this.getTargets().get(o2).isEmpty())
-                                d2 = targets.get(o2).size();
+                            if (csr.get(o1) != -1)
+                                d1 = targets.get(csr.get(o1)).size();
+                            if (csr.get(o2) != -1)
+                                d2 = targets.get(csr.get(o2)).size();
                             if (d1 == d2) {
                                 return o1 < o2 ? -1 : 1;
                             } else {
@@ -167,8 +166,6 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
             }
         }
         Vs = null;
-        id_V.clear();
-        id_V = null;
 
         Iterator<String> it = (Iterator<String>) this.dict_V.keySet().iterator();
         while (it.hasNext()) {
@@ -178,32 +175,25 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
         }
 
         int maxGap = 0;
-        List<List<byte[]>> newTargets = new ArrayList<>(this.targets.size());
-        for (int i=0; i<this.targets.size(); i++) {
-            newTargets.add(null);
+        for (int sid = 0; sid < this.csr.size(); sid++) {
+            // sid <--> id_new[sid]
+            id_V.set(id_new[sid], this.csr.get(sid));
+            if (this.csr.get(sid) != -1)
+                maxGap = Math.max(Math.abs(maxGap), Math.abs(this.adjustTarget(sid, this.targets.get(this.csr.get(sid)), id_new)));
         }
-        for (int sid = 0; sid < this.targets.size(); sid++) {
-            if (!this.targets.get(sid).isEmpty())
-                maxGap = Math.max(Math.abs(maxGap), Math.abs(this.adjustTarget(sid, this.targets.get(sid), id_new)));
-            newTargets.set(id_new[sid], this.targets.get(sid));
-        }
-        this.targets.clear();
-        this.targets = newTargets;
         id_new = null;
+        this.csr.clear();
+        this.csr = id_V;
+        id_V = null;
         return maxGap;
     }
 
-    private int adjustTarget(int sid_old, List<byte[]> tars, int[] id_new) {
+    private int adjustTarget(int sid_old, List<Integer> tars, int[] id_new) {
         int maxGap = 0;
-        int oldT = sid_old + GraphHelper.byteArrayToInt(tars.get(0));
-        tars.set(0, GraphHelper.intToByteArray(id_new[oldT] - id_new[sid_old]));
-        // System.out.println(GraphHelper.byteArrayToInt(tars.get(0)));
-        for (int i = 1; i < tars.size(); ++i) {
-            int oldTi = oldT + GraphHelper.byteArrayToInt(tars.get(i));
-            tars.set(i, GraphHelper.intToByteArray(id_new[oldTi] - id_new[oldT]));
-            oldT = oldTi;
-            maxGap = Math.max(Math.abs(maxGap), Math.abs(GraphHelper.byteArrayToInt(tars.get(i))));
-            // System.out.println(GraphHelper.byteArrayToInt(tars.get(i)));
+        for (int i = 0; i < tars.size(); ++i) {
+            int oldT = tars.get(i) + sid_old;
+            tars.set(i, id_new[oldT] - id_new[sid_old]);
+            maxGap = Math.max(Math.abs(maxGap), Math.abs(tars.get(i)));
         }
         return maxGap;
     }
@@ -212,7 +202,11 @@ public class Graph_CSR_GC<K, VV, EV> extends Graph<K, VV, EV> {
         return this.dict_V;
     }
 
-    public List<List<byte[]>> getTargets() {
+    public List<List<Integer>> getTargets() {
         return this.targets;
+    }
+
+    public List<Integer> getCsr() {
+        return this.csr;
     }
 }

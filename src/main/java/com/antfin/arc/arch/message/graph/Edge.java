@@ -55,10 +55,10 @@ public class Edge<K, EV> implements IWritable {
 
         if (values.length == 5) {
             return new Edge<>(srcId, values[1], value, Long.valueOf(values[2]),
-                Edge.EdgeType.valueOf(values[3]), values[4]);
+                    Edge.EdgeType.valueOf(values[3]), values[4]);
         } else if (values.length == 4) {
             return new Edge<>(srcId, values[1], value, Long.valueOf(values[2]),
-                Edge.EdgeType.valueOf(values[3]));
+                    Edge.EdgeType.valueOf(values[3]));
         } else if (values.length == 3) {
             return new Edge<>(srcId, values[1], value, Long.valueOf(values[2]));
         } else {
@@ -92,8 +92,8 @@ public class Edge<K, EV> implements IWritable {
 
     public String getKey() {
         return String
-            .format("e_%s%s%s%s%d%s%s%s%s", getSrcId(), DELIMITER, getTargetId(), DELIMITER,
-                getTime(), DELIMITER, type.name(), DELIMITER, edgeType);
+                .format("e_%s%s%s%s%d%s%s%s%s", getSrcId(), DELIMITER, getTargetId(), DELIMITER,
+                        getTime(), DELIMITER, type.name(), DELIMITER, edgeType);
     }
 
     public EV getValue() {
@@ -126,10 +126,10 @@ public class Edge<K, EV> implements IWritable {
         if (other instanceof Edge) {
             Edge edge = (Edge) other;
             return Objects.equals(srcId, edge.getSrcId())
-                && Objects.equals(targetId, edge.getTargetId())
-                && Objects.equals(edgeType, edge.getEdgeType())
-                && edge.getTime() == time
-                && edge.getType() == type;
+                    && Objects.equals(targetId, edge.getTargetId())
+                    && Objects.equals(edgeType, edge.getEdgeType())
+                    && edge.getTime() == time
+                    && edge.getType() == type;
         }
         return false;
     }
@@ -139,12 +139,12 @@ public class Edge<K, EV> implements IWritable {
         return srcId + "#" + targetId + "#" + value;
     }
 
-    public void setEdgeType(String edgeType) {
-        this.edgeType = edgeType;
-    }
-
     public String getEdgeType() {
         return edgeType;
+    }
+
+    public void setEdgeType(String edgeType) {
+        this.edgeType = edgeType;
     }
 
     @Override
@@ -157,10 +157,6 @@ public class Edge<K, EV> implements IWritable {
         return SerDeHelper.object2Byte(getValue());
     }
 
-    public enum EdgeType {
-        IN, OUT
-    }
-
     public Edge<K, EV> cloneWithoutSrc() {
         return new Edge<>(null, targetId, value, time, type, edgeType);
     }
@@ -171,5 +167,9 @@ public class Edge<K, EV> implements IWritable {
 
     public Edge<K, EV> reverse() {
         return new Edge<>(targetId, srcId, value, time, type, edgeType);
+    }
+
+    public enum EdgeType {
+        IN, OUT
     }
 }

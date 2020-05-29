@@ -4,8 +4,8 @@ import org.rocksdb.Options;
 
 public class GraphRocksDBOptions {
 
-	public Options getOptions() {
-		return null;
-	}
+    public Options getOptions() {
+        return null;
+    }
 
 }

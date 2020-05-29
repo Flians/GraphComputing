@@ -10,25 +10,22 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * @param <K>  The type of the id of the Vertex
+ * @param <VV> The type of the Value of the Vertex
+ * @param <EV> The type of the Value of the Edge
  * @author Flians
  * @Description: The graph is described by edge list.
- *               For strings, all instances with the same value point to the same String except for instances created by new String(ar).
+ * For strings, all instances with the same value point to the same String except for instances created by new String(ar).
  * @Title: Graph
  * @ProjectName graphRE
  * @date 2020/5/25 10:30
- * @param <K>
- *     The type of the id of the Vertex
- * @param <VV>
- *     The type of the Value of the Vertex
- * @param <EV>
- *     The type of the Value of the Edge
  */
 
 public class Graph_CSR_EL_List<K, VV, EV> extends Graph<K, VV, EV> {
     // record all vertices; K -> vertex.id
-    private Map<K, Integer > dict_V;
+    private Map<K, Integer> dict_V;
     // record all edges; K -> edge.source.id
-    private List<List<Integer> > targets;
+    private List<List<Integer>> targets;
 
     public Graph_CSR_EL_List() {
         this.dict_V = new BiHashMap<>();
@@ -40,7 +37,7 @@ public class Graph_CSR_EL_List<K, VV, EV> extends Graph<K, VV, EV> {
         if (flag) {
             ((List<Vertex<K, VV>>) vg).forEach(this::addVertex);
         } else {
-            ((List<Edge<K, EV>>)vg).stream().forEach(this::addEdge);
+            ((List<Edge<K, EV>>) vg).stream().forEach(this::addEdge);
         }
     }
 
@@ -72,7 +69,7 @@ public class Graph_CSR_EL_List<K, VV, EV> extends Graph<K, VV, EV> {
     public Object getVertex(Object key) {
         if (key instanceof Integer) {
             if (this.dict_V.containsValue(key)) {
-                return ((BiHashMap)this.dict_V).getKey(key);
+                return ((BiHashMap) this.dict_V).getKey(key);
             }
         } else {
             if (this.dict_V.containsKey(key))
@@ -98,7 +95,7 @@ public class Graph_CSR_EL_List<K, VV, EV> extends Graph<K, VV, EV> {
         return dict_V;
     }
 
-    public List<List<Integer> > getTargets() {
+    public List<List<Integer>> getTargets() {
         return this.targets;
     }
 }

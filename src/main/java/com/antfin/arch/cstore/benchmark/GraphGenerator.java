@@ -2,17 +2,15 @@ package com.antfin.arch.cstore.benchmark;
 
 import com.alipay.kepler.manage.accessor.impl.graph.GraphRocksDBOptions;
 import com.alipay.kepler.util.SerDeHelper;
-import com.antfin.arc.arch.api.view.structure.EdgeProperty;
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import org.rocksdb.Options;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.TtlDB;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 /**
  * Alipay.com Inc
@@ -22,8 +20,8 @@ import org.rocksdb.TtlDB;
  */
 public class GraphGenerator {
     private static final String UidPREFIX = "2088";
-    private Random random = new Random();
     public static String randomWord = RandomWord.getWords(100);
+    private Random random = new Random();
 
     private String[] getUids(int size) {
         String[] uids = new String[size];
@@ -89,8 +87,8 @@ public class GraphGenerator {
                     byte[] value = rocksIterator.value();
                     String key = new String(keyBytes);
                     Edge<String, String> edge = Edge.of(key.split(Edge.DELIMITER)[0].substring(2),
-                        new String(keyBytes),
-                        SerDeHelper.byte2Object(value));
+                            new String(keyBytes),
+                            SerDeHelper.byte2Object(value));
                     edges.add(edge);
                     if (++count == edgeSize) {
                         break;

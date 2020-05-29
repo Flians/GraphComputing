@@ -11,24 +11,21 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * @param <K>  The type of the id of the Vertex
+ * @param <VV> The type of the Value of the Vertex
+ * @param <EV> The type of the Value of the Edge
  * @author Flians
  * @Description: Compare the corresponding method in refObj.
  * @Title: Graph
  * @ProjectName graphRE
  * @date 2020/5/25 10:30
- * @param <K>
- *     The type of the id of the Vertex
- * @param <VV>
- *     The type of the Value of the Vertex
- * @param <EV>
- *     The type of the Value of the Edge
  */
 
 public class Graph_CSR_EL_Map<K, VV, EV> extends Graph<K, VV, EV> {
     // record all vertices; K -> vertex.id
-    private Map<K, Integer > dict_V;
+    private Map<K, Integer> dict_V;
     // record all edges; K -> edge.source.id
-    private Map<Integer, List<Integer> > targets;
+    private Map<Integer, List<Integer>> targets;
 
     public Graph_CSR_EL_Map() {
         this.dict_V = new BiHashMap<>();
@@ -40,7 +37,7 @@ public class Graph_CSR_EL_Map<K, VV, EV> extends Graph<K, VV, EV> {
         if (flag) {
             ((List<Vertex<K, VV>>) vg).forEach(this::addVertex);
         } else {
-            ((List<Edge<K, EV>>)vg).stream().forEach(this::addEdge);
+            ((List<Edge<K, EV>>) vg).stream().forEach(this::addEdge);
         }
     }
 
@@ -56,7 +53,8 @@ public class Graph_CSR_EL_Map<K, VV, EV> extends Graph<K, VV, EV> {
 
     public void addVertex(K id) {
         if (!this.dict_V.containsKey(id)) {
-            this.dict_V.put(id, this.dict_V.size());
+            String newId = new String((String) id);
+            this.dict_V.put((K) newId, this.dict_V.size());
         }
     }
 
@@ -64,11 +62,11 @@ public class Graph_CSR_EL_Map<K, VV, EV> extends Graph<K, VV, EV> {
     public void addEdge(Edge<K, EV> edge) {
         this.addVertex(edge.getSrcId());
         this.addVertex(edge.getTargetId());
-        Integer sid= this.dict_V.get(edge.getSrcId());
+        Integer sid = this.dict_V.get(edge.getSrcId());
         if (this.targets.containsKey(sid)) {
             this.targets.get(sid).add(new Integer(this.dict_V.get(edge.getTargetId())));
         } else {
-            List<Integer > temp = new ArrayList<>();
+            List<Integer> temp = new ArrayList<>();
             temp.add(new Integer(this.dict_V.get(edge.getTargetId())));
             this.targets.put(sid, temp);
         }
@@ -78,7 +76,7 @@ public class Graph_CSR_EL_Map<K, VV, EV> extends Graph<K, VV, EV> {
     public Object getVertex(Object key) {
         if (key instanceof Integer) {
             if (this.dict_V.containsValue(key)) {
-                return ((BiHashMap)this.dict_V).getKey(key);
+                return ((BiHashMap) this.dict_V).getKey(key);
             }
         } else {
             if (this.dict_V.containsKey(key))
@@ -104,7 +102,7 @@ public class Graph_CSR_EL_Map<K, VV, EV> extends Graph<K, VV, EV> {
         return dict_V;
     }
 
-    public Map<Integer, List<Integer> > getTargets() {
+    public Map<Integer, List<Integer>> getTargets() {
         return this.targets;
     }
 }

@@ -1,9 +1,11 @@
-package com.antfin.graph.refObj;
+package com.antfin.graph.newObj;
 
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
 import com.antfin.graph.Graph;
+import org.apache.commons.beanutils.BeanUtils;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,25 +53,52 @@ public class Graph_Map_EL<K, VV, EV> extends Graph<K, VV, EV> {
     @Override
     public void addVertex(Vertex<K, VV> vertex) {
         if (!this.vertices.containsKey(vertex.getId())) {
-            this.vertices.put(vertex.getId(), vertex);
+            Vertex<K, VV> newV = new Vertex();
+            try {
+                BeanUtils.copyProperties(newV, vertex);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            }
+            String newId = new String((byte[]) newV.getId());
+            this.vertices.put((K) newId, newV);
         }
     }
 
     public void addVertex(K id) {
         if (!this.vertices.containsKey(id)) {
-            this.vertices.put(id, new Vertex(id));
+            Vertex<K, VV> newV = new Vertex();
+            try {
+                BeanUtils.copyProperty(newV, "id", id);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            }
+            String newId = new String((String) newV.getId());
+            this.vertices.put((K) newId, newV);
         }
     }
 
     @Override
     public void addEdge(Edge<K, EV> edge) {
         this.addVertex(edge.getSrcId());
+        Edge<K, EV> newE = new Edge();
+        try {
+            BeanUtils.copyProperties(newE, edge);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
         if (this.edges.containsKey(edge.getSrcId())) {
-            this.edges.get(edge.getSrcId()).add(edge);
+            this.edges.get(edge.getSrcId()).add(newE);
         } else {
             List<Edge<K, EV>> temp = new ArrayList<>();
-            temp.add(edge);
-            this.edges.put(edge.getSrcId(), temp);
+            temp.add(newE);
+            String newId = new String((String) newE.getSrcId());
+            this.edges.put((K) newId, temp);
         }
     }
 

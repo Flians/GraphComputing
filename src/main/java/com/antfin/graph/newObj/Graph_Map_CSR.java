@@ -1,10 +1,12 @@
-package com.antfin.graph.refObj;
+package com.antfin.graph.newObj;
 
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
 import com.antfin.graph.Graph;
 import com.antfin.util.GraphHelper;
+import org.apache.commons.beanutils.BeanUtils;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 /**
@@ -16,7 +18,7 @@ import java.util.*;
  * When the vertex is assigned to a edge, it is saved into Map dict_V<vertex_id, value>.
  * The value is the index of this vertex in vertices, and is the index of its edges in edges.
  * Not good:
- *      There are duplicate edges in edges
+ * There are duplicate edges in edges
  * @Title: Graph
  * @ProjectName graphRE
  * @date 2020/5/18 14:29
@@ -50,25 +52,49 @@ public class Graph_Map_CSR<K, VV, EV> extends Graph<K, VV, EV> {
     @Override
     public void addVertex(Vertex<K, VV> vertex) {
         if (!this.dict_V.containsKey(vertex.getId())) {
-            this.vertices.add(vertex);
-            this.dict_V.put(vertex.getId(), this.dict_V.size());
+            Vertex<K, VV> newV = new Vertex();
+            try {
+                BeanUtils.copyProperties(newV, vertex);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            }
+            this.vertices.add(newV);
+            this.dict_V.put(newV.getId(), this.dict_V.size());
         }
     }
 
     @Override
     public void addEdge(Edge<K, EV> edge) {
+        Edge<K, EV> newE = new Edge();
+        try {
+            BeanUtils.copyProperties(newE, edge);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
         // the source vertex of edge has no edges.
         if (!this.dict_V.containsKey(edge.getSrcId())) {
-            this.vertices.add(new Vertex<>(edge.getSrcId()));
-            this.dict_V.put(edge.getSrcId(), this.edges.size());
+            Vertex<K, VV> newV = new Vertex();
+            try {
+                BeanUtils.copyProperty(newV, "id", edge.getSrcId());
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            }
+            this.vertices.add(newV);
+            this.dict_V.put(newV.getId(), this.edges.size());
             this.dict_V.put(this.vertices.get(this.edges.size()).getId(), this.dict_V.size() - 1);
             GraphHelper.swap(this.edges.size(), this.vertices.size() - 1, this.vertices);
             List<Edge<K, EV>> item = new ArrayList<>();
-            item.add(edge);
+            item.add(newE);
             this.edges.add(item);
         } else {
             // the source vertex of edge has other edges.
-            this.edges.get(this.dict_V.get(edge.getSrcId())).add(edge);
+            this.edges.get(this.dict_V.get(edge.getSrcId())).add(newE);
         }
     }
 

@@ -19,7 +19,7 @@ import java.util.Map;
 
 public class Graph_EL extends Graph {
     // record all edges; String -> edge.source.id
-    private Map<String, List<String> > edges;
+    private Map<String, List<String>> edges;
 
     public Graph_EL() {
         this.edges = new HashMap<>();
@@ -30,7 +30,7 @@ public class Graph_EL extends Graph {
         if (flag) {
             ((List<Vertex>) vg).forEach(this::addVertex);
         } else {
-            ((List<Edge>)vg).stream().forEach(this::addEdge);
+            ((List<Edge>) vg).stream().forEach(this::addEdge);
         }
     }
 
@@ -76,7 +76,7 @@ public class Graph_EL extends Graph {
     }
 
 
-    public Map<String, List<String> > getEdges() {
+    public Map<String, List<String>> getEdges() {
         return this.edges;
     }
 }

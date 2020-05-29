@@ -13,31 +13,31 @@ import java.util.*;
  * @param <EV>
  * @author Flians
  * @Description: The graph is described by Compressed Sparse Row (CSR).
- *               When the vertex is assigned to a edge, it is saved into Map dict_V<vertex_id, value>.
- *               For adding a edge by the id of the source v, the complexity is O(Degree(v))
- *               For a Vertex with id = sid, csr[dict_V[sid]] is the index of its edges in targets.
- *               If i = csr[dict_V[sid]], the first vertex connected by this vertex has the following relationship:
- *                  targets[i][j] = dict_V[tid] - dict_V[sid]
- *               and other vertices connected by this vertex has the following relationship:
- *                  dict_V[tid] = SUM(targets[i][j]) + dict_V[sid], j in [0,targets[i].size())
- *               For reducing the targets[i][j], make the source as close to the first sink as possible, and make the adjacent sink close
+ * When the vertex is assigned to a edge, it is saved into Map dict_V<vertex_id, value>.
+ * For adding a edge by the id of the source v, the complexity is O(Degree(v))
+ * For a Vertex with id = sid, csr[dict_V[sid]] is the index of its edges in targets.
+ * If i = csr[dict_V[sid]], the first vertex connected by this vertex has the following relationship:
+ *      targets[i][j] = dict_V[tid] - dict_V[sid]
+ * and other vertices connected by this vertex has the following relationship:
+ *      dict_V[tid] = SUM(targets[i][j]) + dict_V[sid], j in [0,targets[i].size())
+ * For reducing the targets[i][j], make the source as close to the first sink as possible, and make the adjacent sink close
  * @Title: Graph_CSR_GC
  * @ProjectName graphRE
  * @date 2020/5/18 16:13
  */
-public class Graph_CSR_GC_STD<K, VV, EV> extends Graph<K, VV, EV> {
+public class Graph_CSR_GC_Brother<K, VV, EV> extends Graph<K, VV, EV> {
     private Map<K, Integer> dict_V;
     // store all targets. For i-th vertex in vertices, i = dict_V[sid] and targets[i][j] = dict_V[tid] - dict_V[sid]
-    private List<List<Integer> > targets;
+    private List<List<Integer>> targets;
     private List<Integer> csr;
 
-    public Graph_CSR_GC_STD() {
+    public Graph_CSR_GC_Brother() {
         this.dict_V = new BiHashMap<>();
         this.targets = new ArrayList<>();
         this.csr = new ArrayList<>();
     }
 
-    public Graph_CSR_GC_STD(List vg, boolean flag) {
+    public Graph_CSR_GC_Brother(List vg, boolean flag) {
         this();
         if (flag) {
             ((List<Vertex<K, VV>>) vg).forEach(this::addVertex);
@@ -46,7 +46,7 @@ public class Graph_CSR_GC_STD<K, VV, EV> extends Graph<K, VV, EV> {
         }
     }
 
-    public Graph_CSR_GC_STD(List<Vertex<K, VV>> vertices, List<Edge<K, EV>> edges) {
+    public Graph_CSR_GC_Brother(List<Vertex<K, VV>> vertices, List<Edge<K, EV>> edges) {
         this(vertices, true);
         edges.stream().forEach(this::addEdge);
     }
@@ -75,7 +75,7 @@ public class Graph_CSR_GC_STD<K, VV, EV> extends Graph<K, VV, EV> {
             this.targets.add(item);
         } else {
             int before = this.dict_V.get(edge.getSrcId());
-            for (Integer i:this.targets.get(this.csr.get(this.dict_V.get(edge.getSrcId())))) {
+            for (Integer i : this.targets.get(this.csr.get(this.dict_V.get(edge.getSrcId())))) {
                 before += i;
             }
             // the source vertex of edge has other edges.
@@ -87,7 +87,7 @@ public class Graph_CSR_GC_STD<K, VV, EV> extends Graph<K, VV, EV> {
     public Object getVertex(Object key) {
         if (key instanceof Integer) {
             if (this.dict_V.containsValue(key)) {
-                return ((BiHashMap)this.dict_V).getKey(key);
+                return ((BiHashMap) this.dict_V).getKey(key);
             }
         } else {
             if (this.dict_V.containsKey(key))
@@ -116,35 +116,35 @@ public class Graph_CSR_GC_STD<K, VV, EV> extends Graph<K, VV, EV> {
     public int reorder_BFS() {
         // Degree sort to put vertices with more out-edges in front
         List<Integer> id_V = new ArrayList<>(this.dict_V.size());
-        for (int i=0; i<this.dict_V.size(); ++i)
+        for (int i = 0; i < this.dict_V.size(); ++i)
             id_V.add(i);
         Collections.sort(id_V, (o1, o2) -> {
-            Integer d1=0, d2=0;
+            Integer d1 = 0, d2 = 0;
             if (csr.get(o1) != -1)
                 d1 = targets.get(csr.get(o1)).size();
             if (csr.get(o2) != -1)
                 d2 = targets.get(csr.get(o2)).size();
-            if (d1==d2) {
-                return o1 < o2?-1:1;
+            if (d1 == d2) {
+                return o1 < o2 ? -1 : 1;
             } else {
                 return d1 < d2 ? 1 : -1;
             }
         });
 
         int[] id_new = new int[this.dict_V.size()];
-        for (int i=0; i<id_new.length; ++i) id_new[i] = -1;
+        for (int i = 0; i < id_new.length; ++i) id_new[i] = -1;
         int cur_idx = 0;
         Queue<Integer> Vs = new LinkedList<>();
         for (Integer vid : id_V) {
             if (id_new[vid] == -1) {
                 id_new[vid] = cur_idx++;
                 Vs.add(vid);
-                int levelSize = 1;
+                int levelSize = Vs.size();
                 while (!Vs.isEmpty()) {
                     // Vertex has output edges
                     if (this.csr.get(Vs.peek()) != -1) {
                         Integer tarInt = Vs.peek();
-                        for (Integer tar : this.targets.get(this.csr.get(Vs.peek())) ) {
+                        for (Integer tar : this.targets.get(this.csr.get(Vs.peek()))) {
                             tarInt += tar;
                             if (id_new[tarInt] == -1) {
                                 id_new[tarInt] = cur_idx++;
@@ -154,8 +154,8 @@ public class Graph_CSR_GC_STD<K, VV, EV> extends Graph<K, VV, EV> {
                     }
                     Vs.poll();
                     --levelSize;
-                    if (levelSize==0) {
-                        Collections.sort((List)Vs, (Comparator<Integer>) (o1, o2) -> {
+                    if (levelSize == 0) {
+                        Collections.sort((List) Vs, (Comparator<Integer>) (o1, o2) -> {
                             Integer d1 = 0, d2 = 0;
                             if (csr.get(o1) != -1)
                                 d1 = targets.get(csr.get(o1)).size();
@@ -175,14 +175,14 @@ public class Graph_CSR_GC_STD<K, VV, EV> extends Graph<K, VV, EV> {
         Vs = null;
 
         Iterator<String> it = (Iterator<String>) this.dict_V.keySet().iterator();
-        while (it.hasNext()){
+        while (it.hasNext()) {
             String key = it.next();
             // System.out.println("'" + key + "\t" + id_new[this.dict_V.get(key)]);
             this.dict_V.put((K) key, id_new[this.dict_V.get(key)]);
         }
 
         int maxGap = 0;
-        for (int sid=0; sid < this.csr.size(); sid++) {
+        for (int sid = 0; sid < this.csr.size(); sid++) {
             // sid <--> id_new[sid]
             id_V.set(id_new[sid], this.csr.get(sid));
             if (this.csr.get(sid) != -1)
@@ -195,13 +195,13 @@ public class Graph_CSR_GC_STD<K, VV, EV> extends Graph<K, VV, EV> {
         return maxGap;
     }
 
-    private int adjustTarget(int sid_old, List<Integer> tars, int[] id_new){
+    private int adjustTarget(int sid_old, List<Integer> tars, int[] id_new) {
         int maxGap = 0;
         int oldT = sid_old + tars.get(0);
-        tars.set(0, id_new[oldT]-id_new[sid_old]);
-        for (int i=1; i < tars.size(); ++i){
+        tars.set(0, id_new[oldT] - id_new[sid_old]);
+        for (int i = 1; i < tars.size(); ++i) {
             int oldTi = oldT + tars.get(i);
-            tars.set(i, id_new[oldTi]-id_new[oldT]);
+            tars.set(i, id_new[oldTi] - id_new[oldT]);
             oldT = oldTi;
             maxGap = Math.max(Math.abs(maxGap), Math.abs(tars.get(i)));
         }

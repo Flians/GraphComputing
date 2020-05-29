@@ -1,16 +1,19 @@
 package com.antfin.util;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
+ * @param <K>
+ * @param <V>
  * @author Flians
  * @Description: A new type of Map with one-to-one mapping. Key and value are not repeated
  * @Title: Graph_CSR_GC
  * @ProjectName graphRE
  * @date 2020/5/21 10:09
- * @param <K>
- * @param <V>
  */
 public class BiHashMap<K, V> extends AbstractMap<K, V> implements Map<K, V>, Serializable {
     private Map<K, V> kMap;
@@ -40,7 +43,7 @@ public class BiHashMap<K, V> extends AbstractMap<K, V> implements Map<K, V>, Ser
              */
         }
         this.kMap.put(k, v);
-        this.vMap.put(v,k);
+        this.vMap.put(v, k);
         return v;
     }
 
@@ -55,7 +58,7 @@ public class BiHashMap<K, V> extends AbstractMap<K, V> implements Map<K, V>, Ser
 
     @Override
     public V remove(Object key) {
-        V v=null;
+        V v = null;
         if (this.kMap.containsKey(key)) {
             v = this.kMap.get(key);
             this.vMap.remove(v);
