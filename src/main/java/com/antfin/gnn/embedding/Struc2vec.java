@@ -33,7 +33,7 @@ public class Struc2vec<K, VV, EV> {
     private int num_walks;
     // Number of parallel workers, default is 4.
     private int workers;
-    private int verbose = 0;
+
     private double stay_prob = 0.3;
 
     private boolean opt1_reduce_len;
@@ -100,7 +100,7 @@ public class Struc2vec<K, VV, EV> {
                 vertices.values().removeIf(value -> value.size() == 0);
             }
             structDistance = new HashMap<>();
-            GraphHelper.partitionDict(vertices, workers).stream().parallel().forEach(part -> {
+            GraphHelper.partitionDict(vertices, workers).parallelStream().parallel().forEach(part -> {
                 structDistance.putAll(computeDtwDist(part, degreeList, disFun));
             });
             GraphHelper.writeObject(structDistance, structDistanceFile);
