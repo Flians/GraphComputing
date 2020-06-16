@@ -70,6 +70,11 @@ public class Graph_EL extends Graph {
     }
 
     @Override
+    public List<Object> getVertexList() {
+        return new ArrayList<>(this.edges.keySet());
+    }
+
+    @Override
     public void clear() {
         this.edges.clear();
         this.edges = null;

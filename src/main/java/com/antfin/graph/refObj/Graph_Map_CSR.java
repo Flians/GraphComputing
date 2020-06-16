@@ -27,12 +27,12 @@ public class Graph_Map_CSR<K, VV, EV> extends Graph<K, VV, EV> {
     private List<Vertex<K, VV>> vertices;
     private List<List<Edge<K, EV>>> edges;
     // dict_V[vertex.id] -> index, record all vertices
-    private Map<K, Integer> dict_V;
+    private Map<K, Integer> dictV;
 
     public Graph_Map_CSR() {
-        this.vertices = new LinkedList<>();
+        this.vertices = new ArrayList<>();
         this.edges = new ArrayList<>();
-        this.dict_V = new HashMap<>();
+        this.dictV = new HashMap<>();
     }
 
     public Graph_Map_CSR(List vg, boolean flag) {
@@ -51,18 +51,18 @@ public class Graph_Map_CSR<K, VV, EV> extends Graph<K, VV, EV> {
 
     @Override
     public void addVertex(Vertex<K, VV> vertex) {
-        if (!this.dict_V.containsKey(vertex.getId())) {
+        if (!this.dictV.containsKey(vertex.getId())) {
             if (vertex.isEmpty()) {
                 this.vertices.add(nullVertex);
             } else {
                 this.vertices.add(vertex);
             }
-            this.dict_V.put(vertex.getId(), this.dict_V.size());
+            this.dictV.put(vertex.getId(), this.dictV.size());
         } else {
             if (vertex.isEmpty()) {
-                this.vertices.set(this.dict_V.get(vertex.getId()), nullVertex);
+                this.vertices.set(this.dictV.get(vertex.getId()), nullVertex);
             } else {
-                this.vertices.set(this.dict_V.get(vertex.getId()), vertex);
+                this.vertices.set(this.dictV.get(vertex.getId()), vertex);
             }
         }
     }
@@ -70,22 +70,22 @@ public class Graph_Map_CSR<K, VV, EV> extends Graph<K, VV, EV> {
     @Override
     public void addEdge(Edge<K, EV> edge) {
         K srcId = edge.getSrcId();
-        boolean exist = dict_V.containsKey(srcId);
-        if (exist && this.dict_V.get(srcId) < this.edges.size()) {
+        boolean exist = dictV.containsKey(srcId);
+        if (exist && this.dictV.get(srcId) < this.edges.size()) {
             // the source vertex of edge has other edges.
-            this.edges.get(this.dict_V.get(srcId)).add(edge);
+            this.edges.get(this.dictV.get(srcId)).add(edge);
         } else {
             int _id = 0;
             if (!exist) {
                 this.vertices.add(nullVertex);
-                if (this.dict_V.size() > 0) {
-                    _id = this.dict_V.size() - 1;
+                if (this.dictV.size() > 0) {
+                    _id = this.dictV.size() - 1;
                 }
             } else {
-                _id = this.dict_V.get(srcId);
+                _id = this.dictV.get(srcId);
             }
-            this.dict_V.put(srcId, this.edges.size());
-            this.dict_V.put(this.vertices.get(this.edges.size()).getId(), _id);
+            this.dictV.put(srcId, this.edges.size());
+            this.dictV.put(this.vertices.get(this.edges.size()).getId(), _id);
             GraphHelper.swap(this.edges.size(), _id, this.vertices);
 
             List<Edge<K, EV>> edges = new ArrayList<>();
@@ -96,7 +96,7 @@ public class Graph_Map_CSR<K, VV, EV> extends Graph<K, VV, EV> {
 
     @Override
     public Vertex<K, VV> getVertex(K sid) {
-        Vertex<K, VV> result = this.dict_V.containsKey(sid) ? this.vertices.get(this.dict_V.get(sid)) : null;
+        Vertex<K, VV> result = this.dictV.containsKey(sid) ? this.vertices.get(this.dictV.get(sid)) : null;
         if (result == nullVertex) {
             return new Vertex<>(sid);
         } else {
@@ -106,8 +106,8 @@ public class Graph_Map_CSR<K, VV, EV> extends Graph<K, VV, EV> {
 
     @Override
     public List<Edge<K, EV>> getEdge(K sid) {
-        if (this.dict_V.containsKey(sid) && this.dict_V.get(sid) < this.edges.size()) {
-            return this.edges.get(this.dict_V.get(sid)).stream()
+        if (this.dictV.containsKey(sid) && this.dictV.get(sid) < this.edges.size()) {
+            return this.edges.get(this.dictV.get(sid)).stream()
                 .map(x -> {
                     x.setSrcId(sid);
                     return x;
@@ -118,9 +118,14 @@ public class Graph_Map_CSR<K, VV, EV> extends Graph<K, VV, EV> {
     }
 
     @Override
+    public List<Object> getVertexList() {
+        return new ArrayList<>(this.vertices);
+    }
+
+    @Override
     public void clear() {
-        this.dict_V.clear();
-        this.dict_V = null;
+        this.dictV.clear();
+        this.dictV = null;
         this.edges.clear();
         this.edges = null;
         this.vertices.clear();
@@ -135,7 +140,7 @@ public class Graph_Map_CSR<K, VV, EV> extends Graph<K, VV, EV> {
         return this.edges;
     }
 
-    public Map<K, Integer> getDict_V() {
-        return this.dict_V;
+    public Map<K, Integer> getDictV() {
+        return this.dictV;
     }
 }

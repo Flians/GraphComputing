@@ -92,7 +92,7 @@ public class GraphTest_Ref {
             System.out.println(" some edges are lost!");
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR) this.graph).getVertices()));
         System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR) this.graph).getEdges()));
-        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR) this.graph).getDict_V()));
+        System.out.println(RamUsageEstimator.humanSizeOf(((Graph_Map_CSR) this.graph).getDictV()));
     }
 
     @Test

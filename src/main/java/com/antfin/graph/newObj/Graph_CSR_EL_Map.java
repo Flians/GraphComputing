@@ -91,6 +91,11 @@ public class Graph_CSR_EL_Map<K, VV, EV> extends Graph<K, VV, EV> {
     }
 
     @Override
+    public List<Object> getVertexList() {
+        return new ArrayList<>(this.dict_V.keySet());
+    }
+
+    @Override
     public void clear() {
         this.targets.clear();
         this.targets = null;

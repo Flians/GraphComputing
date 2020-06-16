@@ -113,6 +113,11 @@ public class Graph_Map_EL<K, VV, EV> extends Graph<K, VV, EV> {
     }
 
     @Override
+    public List<Object> getVertexList() {
+        return new ArrayList<>(this.vertices.values());
+    }
+
+    @Override
     public void clear() {
         this.edges.clear();
         this.edges = null;

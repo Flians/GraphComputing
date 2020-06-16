@@ -2,6 +2,7 @@ package com.antfin.graph;
 
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
+import java.util.List;
 
 /**
  * @author Flians
@@ -18,6 +19,8 @@ public abstract class Graph<K, VV, EV> {
     public abstract Object getVertex(K id);
 
     public abstract Object getEdge(K sid);
+
+    public abstract List<Object> getVertexList();
 
     public abstract void clear();
 }
