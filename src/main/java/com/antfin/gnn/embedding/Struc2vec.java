@@ -128,6 +128,9 @@ public class Struc2vec<K, VV, EV> {
                     vertices.keySet().forEach(item -> {
                         vertices.get(item).add(k);
                     });
+                    if (k == null) {
+                        System.out.println(k + " is null in Struc2vec.computeStructuralDistance.degreeList.keySet().forEach");
+                    }
                     vertices.put(k, new ArrayList<K>());
                 });
                 vertices.values().removeIf(value -> value.size() == 0);
@@ -209,8 +212,8 @@ public class Struc2vec<K, VV, EV> {
                 for (int i = 0; i < maxLayer; ++i) {
                     listDis.add(GraphHelper.dtw(listV1.get(i), listV2.get(i), 1, disFun));
                 }
-                if (maxLayer == 0 || listDis.size() == 0 || v1==null || v2==null) {
-                    System.out.println("");
+                if (v1==null || v2==null) {
+                    System.out.println(String.format("(%s, %s) is null in Struc2vec.computeDtwDist.part.forEach", v1, v2));
                 }
                 dtwDistance.put(new Pair<>(v1, v2), listDis);
             });
