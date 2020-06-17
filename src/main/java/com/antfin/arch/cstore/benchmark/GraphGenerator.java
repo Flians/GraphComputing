@@ -1,6 +1,7 @@
 package com.antfin.arch.cstore.benchmark;
 
 import com.alipay.kepler.manage.accessor.impl.graph.GraphRocksDBOptions;
+import com.alipay.kepler.util.SerDeHelper;
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
 import org.rocksdb.Options;

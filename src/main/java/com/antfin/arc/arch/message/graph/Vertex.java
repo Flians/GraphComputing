@@ -1,5 +1,6 @@
 package com.antfin.arc.arch.message.graph;
 
+import com.alipay.kepler.util.SerDeHelper;
 import com.antfin.arc.arch.message.IWritable;
 
 /**

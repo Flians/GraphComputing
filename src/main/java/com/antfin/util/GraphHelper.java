@@ -1,9 +1,13 @@
 package com.antfin.util;
 
 import com.alipay.kepler.util.SerDeHelper;
+import com.antfin.arc.arch.message.graph.Edge;
+import com.antfin.arch.cstore.benchmark.RandomWord;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -106,6 +110,10 @@ public class GraphHelper<K, VV, EV> {
     }
 
     public static void writeObject(Object object, File file) throws IOException {
+        if(!file.getParentFile().exists()){
+            file.getParentFile().mkdirs();
+        }
+        file.createNewFile();
         byte[] res = SerDeHelper.object2Byte(object);
         FileOutputStream opStream = new FileOutputStream(file);
         opStream.write(res);
@@ -132,6 +140,31 @@ public class GraphHelper<K, VV, EV> {
             partList.add(part);
         }
         return partList;
+    }
+
+    public static List<Edge<String, String>> loadEdges(String path){
+        File file = new File(path);
+        if (!file.exists()) {
+            System.err.println(path + " is not exist!");
+        }
+        List<Edge<String, String>> edges = new ArrayList<>();
+        try (BufferedReader reader = Files.newBufferedReader(file.toPath(), Charset.forName("utf-8"))) {
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.length() == 0)
+                    continue;
+                String[] vid = line.split(" ");
+                if (vid.length != 2)
+                {
+                    System.err.println(line + " must include source and sink!");
+                }
+                edges.add(new Edge<>(vid[0], vid[1], RandomWord.getWords(100)));
+            }
+        } catch (IOException x) {
+            System.err.format("IOException: %s%n", x);
+        }
+        return edges;
     }
 
     /**

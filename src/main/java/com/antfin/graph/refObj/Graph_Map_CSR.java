@@ -119,7 +119,14 @@ public class Graph_Map_CSR<K, VV, EV> extends Graph<K, VV, EV> {
 
     @Override
     public List<Object> getVertexList() {
-        return new ArrayList<>(this.vertices);
+        return this.dictV.entrySet().stream().map(entry -> {
+            Vertex vertex = vertices.get(dictV.get(entry.getKey()));
+            if (vertex == nullVertex){
+                return new Vertex<>(entry.getKey());
+            } else {
+                return vertex;
+            }
+        }).collect(Collectors.toList());
     }
 
     @Override
