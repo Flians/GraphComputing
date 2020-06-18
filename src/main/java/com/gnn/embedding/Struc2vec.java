@@ -244,10 +244,10 @@ public class Struc2vec<K, VV, EV> {
                 if (layersAdj.size() <= i) {
                     layersAdj.add(new HashMap<>());
                 }
-                if (layersAdj.get(i).containsKey(pair.getKey())) {
+                if (!layersAdj.get(i).containsKey(pair.getKey())) {
                     layersAdj.get(i).put(pair.getKey(), new ArrayList<>());
                 }
-                if (layersAdj.get(i).containsKey(pair.getValue())) {
+                if (!layersAdj.get(i).containsKey(pair.getValue())) {
                     layersAdj.get(i).put(pair.getValue(), new ArrayList<>());
                 }
                 layersAdj.get(i).get(pair.getKey()).add(pair.getValue());
@@ -301,6 +301,8 @@ public class Struc2vec<K, VV, EV> {
         Stack<Integer> large = new Stack<>();
         List<Double> edgeWeight_ = new ArrayList<>();
         for (int i = 0; i < edgeWeight.size(); ++i) {
+            accept.add(0.0);
+            alias.add(0.0);
             edgeWeight_.add(edgeWeight.get(i) * edgeWeight.size());
             if (edgeWeight_.get(i) < 1) {
                 small.push(i);
