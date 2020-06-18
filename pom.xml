@@ -19,6 +19,13 @@
     </properties>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/com.medallia.word2vec/Word2VecJava -->
+        <dependency>
+            <groupId>com.medallia.word2vec</groupId>
+            <artifactId>Word2VecJava</artifactId>
+            <version>0.10.3</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
         <dependency>
             <groupId>com.google.guava</groupId>

@@ -9,6 +9,10 @@ import com.antfin.util.DistanceFunction;
 import com.antfin.util.GraphHelper;
 import com.antfin.util.OptDegreeDistance;
 import com.gnn.util.GNNHelper;
+import com.google.common.collect.Iterables;
+import com.medallia.word2vec.Searcher.UnknownWordException;
+import com.medallia.word2vec.Word2VecModel;
+import com.medallia.word2vec.neuralnetwork.NeuralNetworkType;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,6 +27,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 import org.apache.commons.collections.map.HashedMap;
+import org.apache.commons.lang3.StringUtils;
 
 public class Struc2vec<K, VV, EV> {
 
@@ -43,6 +48,10 @@ public class Struc2vec<K, VV, EV> {
 
     private String tempPath;
     private boolean reuse = false;
+
+    private List<List<K>> walks;
+    private Word2VecModel model;
+    private Map<K, List<Double>> embeddings;
 
     public Struc2vec() {
         this.graph = new Graph_Map_CSR();
@@ -87,9 +96,11 @@ public class Struc2vec<K, VV, EV> {
         this.tempPath = tempPath;
     }
 
-    public Struc2vec(String path) {
+    public Struc2vec(String path) throws IOException {
         this();
         this.graph = new Graph_Map_CSR(GraphHelper.loadEdges(path), false);
+        this.createContextGraph(10, 4);
+        this.walks = this.struc2vecWalk(100, 10, 0.3, 4);
     }
 
     public void createContextGraph(int numLayers, int workers) throws IOException {
@@ -335,13 +346,47 @@ public class Struc2vec<K, VV, EV> {
         int initialLayer = 0;
         List<List<K>> walks = new ArrayList();
         GNNHelper.partitionNumber(numWalks, workers).parallelStream().parallel().forEach(part -> {
-            walks.addAll(GNNHelper.simulateWalks(this.graph.getVertexList(), numWalks, walkLength, stayProb, initialLayer, layersAlias, layersAccept,layersAdj,gamma));
+            walks.addAll(GNNHelper.simulateWalks(this.graph.getVertexList(), numWalks, walkLength, stayProb, initialLayer, layersAlias, layersAccept, layersAdj, gamma));
         });
         return walks;
     }
 
-    public void train(int embed_size, int window_size, int workers, int iterator) {
-
+    public void train(int embed_size, int window_size, int workers, int iterator) throws InterruptedException {
+        this.model = Word2VecModel.trainer()
+            .setMinVocabFrequency(0)
+            .useNumThreads(workers)
+            .setWindowSize(window_size)
+            .type(NeuralNetworkType.SKIP_GRAM)
+            .useHierarchicalSoftmax()
+            .setLayerSize(embed_size)
+            .setDownSamplingRate(1e-3)
+            .setNumIterations(iterator)
+            .train(Iterables.partition((List<String>)this.walks.stream().flatMap(List::stream).collect(Collectors.toList()), this.walkLength));
     }
 
+    public Map<K, List<Double>> getEmbeddings() {
+        if (this.model == null) {
+            System.err.println("this mode is not trained!");
+        }
+        if (this.embeddings != null && !this.embeddings.isEmpty()) {
+            return this.embeddings;
+        }
+        this.embeddings = new HashMap<>();
+        this.graph.getVertexList().forEach(v -> {
+            try {
+                this.embeddings.put(((Vertex<K, VV>) v).getId(), this.model.forSearch().getRawVector((String) ((Vertex) v).getId()));
+            } catch (UnknownWordException e) {
+                e.printStackTrace();
+            }
+        });
+        return this.embeddings;
+    }
+
+    public Graph getGraph() {
+        return this.graph;
+    }
+
+    public Word2VecModel getModel() {
+        return this.model;
+    }
 }
