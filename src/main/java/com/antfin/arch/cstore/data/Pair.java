@@ -1,11 +1,5 @@
 package com.antfin.arch.cstore.data;
 
-/**
- * Alipay.com Inc
- * Copyright (c) 2004-2020 All Rights Reserved.
- *
- * @author wutao on 2020/4/13.
- */
 public class Pair<U, V> {
 
     public final U f0;

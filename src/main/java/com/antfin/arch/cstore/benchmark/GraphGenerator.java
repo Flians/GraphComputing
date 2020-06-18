@@ -12,12 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Alipay.com Inc
- * Copyright (c) 2004-2020 All Rights Reserved.
- *
- * @author wutao on 2020/2/26.
- */
 public class GraphGenerator {
     private static final String UidPREFIX = "2088";
     public static String randomWord = RandomWord.getWords(100);

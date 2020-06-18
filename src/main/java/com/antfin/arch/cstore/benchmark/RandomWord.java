@@ -6,10 +6,6 @@ package com.antfin.arch.cstore.benchmark;
 
 import java.util.Random;
 
-/**
- * @author xuyitian
- * @version $Id: RandomWord.java, v 0.1 2016年8月18日 下午5:01:13 xuyitian Exp $
- */
 public class RandomWord {
 
     private static String[] words = {"a", "b", "c", "d", "e", "f", "g", "h", "i", "g", "k", "l", "m", "n",

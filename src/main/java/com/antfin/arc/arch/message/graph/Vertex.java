@@ -3,11 +3,6 @@ package com.antfin.arc.arch.message.graph;
 import com.alipay.kepler.util.SerDeHelper;
 import com.antfin.arc.arch.message.IWritable;
 
-/**
- * Alipay.com Inc Copyright (c) 2004-2017 All Rights Reserved.
- *
- * @author gaolun on 18/1/21.
- */
 public class Vertex<K, VV> implements IWritable {
 
     private K id;

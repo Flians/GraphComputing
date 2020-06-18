@@ -5,11 +5,6 @@ import com.antfin.arc.arch.message.IWritable;
 
 import java.util.Objects;
 
-/**
- * Alipay.com Inc Copyright (c) 2004-2017 All Rights Reserved.
- *
- * @author gaolun on 18/1/21.
- */
 public class Edge<K, EV> implements IWritable {
 
     public static final String DELIMITER = "\u0001" + "\u0008";

@@ -1,4 +1,4 @@
-package com.antfin.gnn.embedding;
+package com.gnn.embedding;
 
 import com.antfin.arc.arch.message.graph.Edge;
 import com.antfin.arc.arch.message.graph.Vertex;
@@ -8,6 +8,7 @@ import com.antfin.util.DegreeDistance;
 import com.antfin.util.DistanceFunction;
 import com.antfin.util.GraphHelper;
 import com.antfin.util.OptDegreeDistance;
+import com.gnn.util.GNNHelper;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -136,7 +137,7 @@ public class Struc2vec<K, VV, EV> {
                 vertices.values().removeIf(value -> value.size() == 0);
             }
             structDistance = new HashMap<>();
-            GraphHelper.partitionDict(vertices, workers).parallelStream().parallel().forEach(part -> {
+            GNNHelper.partitionDict(vertices, workers).parallelStream().parallel().forEach(part -> {
                 structDistance.putAll(computeDtwDist(part, degreeList, disFun));
             });
             computeFk(structDistance);
@@ -210,7 +211,7 @@ public class Struc2vec<K, VV, EV> {
                 int maxLayer = Math.min(listV1.size(), listV2.size());
                 List<Double> listDis = new ArrayList<>();
                 for (int i = 0; i < maxLayer; ++i) {
-                    listDis.add(GraphHelper.dtw(listV1.get(i), listV2.get(i), 1, disFun));
+                    listDis.add(GNNHelper.dtw(listV1.get(i), listV2.get(i), 1, disFun));
                 }
                 if (v1==null || v2==null) {
                     System.out.println(String.format("(%s, %s) is null in Struc2vec.computeDtwDist.part.forEach", v1, v2));
