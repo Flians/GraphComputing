@@ -17,8 +17,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
-import java.util.Stack;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
@@ -28,13 +28,13 @@ public class Struc2vec<K, VV, EV> {
 
     private Graph graph;
     // Length of walk per vertex, default is 10.
-    private int walk_length;
+    private int walkLength;
     // Number of walks per vertex, default is 100.
-    private int num_walks;
+    private int numWalks;
     // Number of parallel workers, default is 4.
     private int workers;
 
-    private double stay_prob = 0.3;
+    private double stayProb = 0.3;
 
     private boolean opt1_reduce_len;
     private boolean opt2_reduce_sim_calc;
@@ -46,8 +46,8 @@ public class Struc2vec<K, VV, EV> {
 
     public Struc2vec() {
         this.graph = new Graph_Map_CSR();
-        this.walk_length = 10;
-        this.num_walks = 100;
+        this.walkLength = 10;
+        this.numWalks = 100;
 
         this.workers = 4;
 
@@ -57,16 +57,15 @@ public class Struc2vec<K, VV, EV> {
         this.opt3_num_layers = 10;
 
         this.tempPath = "./temp/struc2vec/";
-
     }
 
-    public Struc2vec(Graph graph, int walk_length, int num_walks, int workers, double stay_prob, boolean opt1_reduce_len, boolean opt2_reduce_sim_calc, boolean opt3_reduce_layers, int opt3_num_layers, String tempPath) {
+    public Struc2vec(Graph graph, int walkLength, int numWalks, int workers, double stayProb, boolean opt1_reduce_len, boolean opt2_reduce_sim_calc, boolean opt3_reduce_layers, int opt3_num_layers, String tempPath) {
         this();
         this.graph = graph;
-        this.walk_length = walk_length;
-        this.num_walks = num_walks;
+        this.walkLength = walkLength;
+        this.numWalks = numWalks;
         this.workers = workers;
-        this.stay_prob = stay_prob;
+        this.stayProb = stayProb;
         this.opt1_reduce_len = opt1_reduce_len;
         this.opt2_reduce_sim_calc = opt2_reduce_sim_calc;
         this.opt3_reduce_layers = opt3_reduce_layers;
@@ -74,13 +73,13 @@ public class Struc2vec<K, VV, EV> {
         this.tempPath = tempPath;
     }
 
-    public Struc2vec(String path, int walk_length, int num_walks, int workers, double stay_prob, boolean opt1_reduce_len, boolean opt2_reduce_sim_calc, boolean opt3_reduce_layers, int opt3_num_layers, String tempPath) {
+    public Struc2vec(String path, int walkLength, int numWalks, int workers, double stayProb, boolean opt1_reduce_len, boolean opt2_reduce_sim_calc, boolean opt3_reduce_layers, int opt3_num_layers, String tempPath) {
         this();
         this.graph = new Graph_Map_CSR(GraphHelper.loadEdges(path), false);
-        this.walk_length = walk_length;
-        this.num_walks = num_walks;
+        this.walkLength = walkLength;
+        this.numWalks = numWalks;
         this.workers = workers;
-        this.stay_prob = stay_prob;
+        this.stayProb = stayProb;
         this.opt1_reduce_len = opt1_reduce_len;
         this.opt2_reduce_sim_calc = opt2_reduce_sim_calc;
         this.opt3_reduce_layers = opt3_reduce_layers;
@@ -100,7 +99,7 @@ public class Struc2vec<K, VV, EV> {
 
 
     public Map<Pair<K, K>, List<Double>> computeStructuralDistance(int numLayers, int workers) throws IOException {
-        File structDistanceFile = new File(tempPath + "struct_distance.kryo");
+        File structDistanceFile = new File(this.tempPath + "struct_distance.kryo");
         Map<Pair<K, K>, List<Double>> structDistance;
         if (structDistanceFile.exists()) {
             structDistance = (Map<Pair<K, K>, List<Double>>) GraphHelper.loadObject(structDistanceFile);
@@ -112,7 +111,7 @@ public class Struc2vec<K, VV, EV> {
                 disFun = new DegreeDistance();
             }
 
-            File degreeListFile = new File(tempPath + "degree_list.kryo");
+            File degreeListFile = new File(this.tempPath + "degree_list.kryo");
             Map<K, List<List<Object>>> degreeList;
             if (degreeListFile.exists()) {
                 degreeList = (Map<K, List<List<Object>>>) GraphHelper.loadObject(degreeListFile);
@@ -213,7 +212,7 @@ public class Struc2vec<K, VV, EV> {
                 for (int i = 0; i < maxLayer; ++i) {
                     listDis.add(GNNHelper.dtw(listV1.get(i), listV2.get(i), 1, disFun));
                 }
-                if (v1==null || v2==null) {
+                if (v1 == null || v2 == null) {
                     System.out.println(String.format("(%s, %s) is null in Struc2vec.computeDtwDist.part.forEach", v1, v2));
                 }
                 dtwDistance.put(new Pair<>(v1, v2), listDis);
@@ -254,19 +253,20 @@ public class Struc2vec<K, VV, EV> {
                 layersAdj.get(i).get(pair.getValue()).add(pair.getKey());
             }
         });
-        GraphHelper.writeObject(layersAdj, new File(String.format("%slayers_adj.kryo", tempPath)));
-        getTransitionProbability(layersDistance, layersAdj);
+        GraphHelper.writeObject(layersAdj, new File(String.format("%slayers_adj.kryo", this.tempPath)));
+        getTransitionProbabilityInLayer(layersDistance, layersAdj);
+        getTransitionProbabilityBetweenLayer();
     }
 
-    public void getTransitionProbability(List<Map<Pair<K, K>, Double>> layersDistance, List<Map<K, List<K>>> layersAdj) throws IOException {
+    public void getTransitionProbabilityInLayer(List<Map<Pair<K, K>, Double>> layersDistance, List<Map<K, List<K>>> layersAdj) throws IOException {
         List<Map<K, List<Double>>> layersAlias = new ArrayList<>(layersAdj.size());
         List<Map<K, List<Double>>> layersAccept = new ArrayList<>(layersAdj.size());
-        for (int i = 0; i < layersAdj.size(); ++i) {
-            Map<Pair<K, K>, Double> layerDistance = layersDistance.get(i);
+        for (int layer = 0; layer < layersAdj.size(); ++layer) {
+            Map<Pair<K, K>, Double> layerDistance = layersDistance.get(layer);
             Map<K, List<Double>> node_alias_dict = new HashMap<>();
             Map<K, List<Double>> node_accept_dict = new HashMap<>();
             Map<K, List<Double>> norm_weights = new HashMap<>();
-            layersAdj.get(i).forEach((v, neighbors) -> {
+            layersAdj.get(layer).forEach((v, neighbors) -> {
                 List<Double> edgeWeight = new ArrayList<>();
                 double sumWeight = 0.0;
                 for (K n : neighbors) {
@@ -284,55 +284,64 @@ public class Struc2vec<K, VV, EV> {
                     edgeWeight.set(j, edgeWeight.get(j) / sumWeight);
                 }
                 norm_weights.put(v, edgeWeight);
-                createAliasTable(edgeWeight, v, node_alias_dict, node_accept_dict);
+                GNNHelper.createAliasTable(edgeWeight, v, node_alias_dict, node_accept_dict);
             });
-            GraphHelper.writeObject(norm_weights, new File(String.format("%snorm_weights_distance_layer-%d.kryo", tempPath, i)));
+            GraphHelper.writeObject(norm_weights, new File(String.format("%snorm_weights_distance_layer-%d.kryo", this.tempPath, layer)));
             layersAlias.add(node_alias_dict);
             layersAccept.add(node_accept_dict);
         }
-        GraphHelper.writeObject(layersAlias, new File(String.format("%slayers_alias.kryo", tempPath)));
-        GraphHelper.writeObject(layersAccept, new File(String.format("%slayers_accept.kryo", tempPath)));
+        GraphHelper.writeObject(layersAlias, new File(String.format("%slayers_alias.kryo", this.tempPath)));
+        GraphHelper.writeObject(layersAccept, new File(String.format("%slayers_accept.kryo", this.tempPath)));
     }
 
-    public void createAliasTable(List<Double> edgeWeight, K v, Map<K, List<Double>> node_alias_dict, Map<K, List<Double>> node_accept_dict) {
-        List<Double> accept = new ArrayList<>(edgeWeight.size());
-        List<Double> alias = new ArrayList<>(edgeWeight.size());
-        Stack<Integer> small = new Stack<>();
-        Stack<Integer> large = new Stack<>();
-        List<Double> edgeWeight_ = new ArrayList<>();
-        for (int i = 0; i < edgeWeight.size(); ++i) {
-            accept.add(0.0);
-            alias.add(0.0);
-            edgeWeight_.add(edgeWeight.get(i) * edgeWeight.size());
-            if (edgeWeight_.get(i) < 1) {
-                small.push(i);
+    public void getTransitionProbabilityBetweenLayer() throws IOException {
+        List<Double> averageWeight = new ArrayList<>();
+        List<Map<K, Integer>> gamma = new ArrayList<>();
+        int layer = 0;
+        while (true) {
+            File layerK = new File(String.format("%snorm_weights_distance_layer-%d.kryo", tempPath, layer));
+            if (layerK.exists()) {
+                double sumWeights = 0.0;
+                double sumEdges = 0.0;
+                Map<K, List<Double>> norm_weights = (Map<K, List<Double>>) GraphHelper.loadObject(layerK);
+                for (Entry<K, List<Double>> entry : norm_weights.entrySet()) {
+                    K v = entry.getKey();
+                    List<Double> weightList = entry.getValue();
+                    sumWeights += entry.getValue().stream().mapToDouble(Double::doubleValue).sum();
+                    sumEdges += entry.getValue().size();
+                }
+                averageWeight.add(sumWeights / sumEdges);
+                Map<K, Integer> layerGamma = new HashMap<>();
+                double avg = averageWeight.get(layer);
+                norm_weights.forEach((v, weightList) -> {
+                    layerGamma.put(v, (int) weightList.stream().filter(w -> w > avg).count());
+                });
+                gamma.add(layerGamma);
+                ++layer;
             } else {
-                large.push(i);
+                break;
             }
         }
-
-        while (small.size() > 0 && large.size() > 0) {
-            int index_small = small.pop();
-            int index_large = large.pop();
-
-            accept.set(index_small, edgeWeight_.get(index_small));
-            alias.set(index_small, (double) index_large);
-            edgeWeight_.set(index_large, edgeWeight_.get(index_large)-(1-edgeWeight_.get(index_small)));
-            if (edgeWeight_.get(index_large) < 1.0) {
-                small.push(index_large);
-            } else {
-                large.push(index_large);
-            }
-        }
-
-        while (large.size() > 0) {
-            accept.set(large.pop(), 1.0);
-        }
-        while (small.size() > 0) {
-            accept.set(small.pop(), 1.0);
-        }
-
-        node_alias_dict.put(v, alias);
-        node_accept_dict.put(v, accept);
+        GraphHelper.writeObject(averageWeight, new File(String.format("%saverage_weight.kryo", this.tempPath)));
+        GraphHelper.writeObject(gamma, new File(String.format("%sgamma.kryo", this.tempPath)));
     }
+
+    public List<List<K>> struc2vecWalk(int numWalks, int walkLength, double stayProb, int workers) throws IOException {
+        List<Map<K, List<Double>>> layersAlias = (List<Map<K, List<Double>>>) GraphHelper.loadObject(new File(String.format("%slayers_alias.kryo", this.tempPath)));
+        List<Map<K, List<Double>>> layersAccept = (List<Map<K, List<Double>>>) GraphHelper.loadObject(new File(String.format("%slayers_accept.kryo", this.tempPath)));
+        List<Map<K, List<K>>> layersAdj = (List<Map<K, List<K>>>) GraphHelper.loadObject(new File(String.format("%slayers_adj.kryo", this.tempPath)));
+        List<Map<K, Integer>> gamma = (List<Map<K, Integer>>) GraphHelper.loadObject(new File(String.format("%sgamma.kryo", this.tempPath)));
+
+        int initialLayer = 0;
+        List<List<K>> walks = new ArrayList();
+        GNNHelper.partitionNumber(numWalks, workers).parallelStream().parallel().forEach(part -> {
+            walks.addAll(GNNHelper.simulateWalks(this.graph.getVertexList(), numWalks, walkLength, stayProb, initialLayer, layersAlias, layersAccept,layersAdj,gamma));
+        });
+        return walks;
+    }
+
+    public void train(int embed_size, int window_size, int workers, int iterator) {
+
+    }
+
 }

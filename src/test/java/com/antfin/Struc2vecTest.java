@@ -22,5 +22,6 @@ public class Struc2vecTest {
     public void test_struc2vec() throws IOException {
         Struc2vec struc2vec = new Struc2vec("/Users/flynn/IdeaProjects/GraphRepresentation/src/test/data/brazil-airports.edgelist");
         struc2vec.createContextGraph(10, 4);
+        struc2vec.struc2vecWalk(100, 10, 0.3, 4);
     }
 }
