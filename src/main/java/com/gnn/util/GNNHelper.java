@@ -2,12 +2,32 @@ package com.gnn.util;
 
 import com.antfin.arc.arch.message.graph.Vertex;
 import com.antfin.util.DistanceFunction;
+import com.antfin.util.GraphHelper;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Stack;
+import javafx.util.Pair;
+import javax.swing.JFrame;
+import jsat.SimpleDataSet;
+import jsat.classifiers.CategoricalData;
+import jsat.classifiers.DataPoint;
+import jsat.datatransform.visualization.TSNE;
+import jsat.linear.DenseMatrix;
+import jsat.linear.Matrix;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.ChartUtils;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 
 public class GNNHelper {
 
@@ -136,7 +156,7 @@ public class GNNHelper {
     }
 
     public static <K> List<List<K>> simulateWalks(List<Vertex> vertices, int numWalks, int walkLength, double stayProb, int initialLayer,
-                                         List<Map<K, List<Double>>> layersAlias, List<Map<K, List<Double>>> layersAccept, List<Map<K, List<K>>> layersAdj, List<Map<K, Integer>> gamma) {
+                                                  List<Map<K, List<Double>>> layersAlias, List<Map<K, List<Double>>> layersAccept, List<Map<K, List<K>>> layersAdj, List<Map<K, Integer>> gamma) {
         List<List<K>> walks = new ArrayList();
         while ((numWalks--) > 0) {
             Collections.shuffle(vertices);
@@ -150,7 +170,7 @@ public class GNNHelper {
                     // same layer
                     if (r < stayProb) {
                         layersAdj.get(layer).get(v.getId());
-                        int vid = (int) (Math.random()*layersAccept.get(layer).get(v.getId()).size());
+                        int vid = (int) (Math.random() * layersAccept.get(layer).get(v.getId()).size());
                         if (rx >= layersAccept.get(layer).get(v.getId()).get(vid)) {
                             vid = layersAlias.get(layer).get(v.getId()).get(vid).intValue();
                         }
@@ -159,11 +179,11 @@ public class GNNHelper {
                     } else {
                         // different layer
                         double w = Math.log(gamma.get(layer).get(v.getId()) + Math.E);
-                        double probUp = w/(w+1);
+                        double probUp = w / (w + 1);
                         if (rx > probUp && layer > initialLayer) {
                             layer = layer - 1;
                         } else {
-                            if (layer + 1 < layersAdj.size() && layersAdj.get(layer+1).containsKey(v.getId())) {
+                            if (layer + 1 < layersAdj.size() && layersAdj.get(layer + 1).containsKey(v.getId())) {
                                 ++layer;
                             }
                         }
@@ -173,5 +193,71 @@ public class GNNHelper {
             });
         }
         return walks;
+    }
+
+    public static <K> void showEmbeddings(Map<K, List<Double>> embeddings, String labelPath, String outPath) throws IOException {
+        List<Pair<String, String>> labels = GraphHelper.readKVFile(labelPath);
+        TSNE instance = new TSNE();
+        instance.setTargetDimension(2);
+
+        Matrix orig_dim = new DenseMatrix(embeddings.size(), embeddings.values().iterator().next().size());
+        int i = 0, j = 0;
+        for (Pair label:labels) {
+            j = 0;
+            for (Double val : embeddings.get(label.getKey())) {
+                orig_dim.set(i, j++, val);
+            }
+            i++;
+        }
+        SimpleDataSet proj = new SimpleDataSet(new CategoricalData[0], orig_dim.cols());
+        for (i = 0; i < orig_dim.rows(); i++) {
+            proj.add(new DataPoint(orig_dim.getRow(i)));
+        }
+        SimpleDataSet nodePosition = instance.transform(proj);
+
+        Map<String, List<Integer>> colorId = new HashMap<>();
+        for (i=0; i<labels.size(); ++i) {
+            if(!colorId.containsKey(labels.get(i).getValue())) {
+                List<Integer> index = new ArrayList<>();
+                index.add(i);
+                colorId.put(labels.get(i).getValue(), index);
+            } else {
+                colorId.get(labels.get(i).getValue()).add(i);
+            }
+        }
+
+        XYSeriesCollection dataset = new XYSeriesCollection();
+
+        colorId.forEach((label, ids) -> {
+            XYSeries XY = new XYSeries(label);
+            ids.forEach(id -> {
+                XY.add(nodePosition.getDataPoint(id).getNumericalValues().get(0), nodePosition.getDataPoint(id).getNumericalValues().get(1));
+            });
+            dataset.addSeries(XY);
+        });
+
+        JFreeChart freeChart = ChartFactory.createScatterPlot(
+            "embeddings",
+            "X",
+            "Y",
+            dataset,
+            PlotOrientation.VERTICAL,
+            true,
+            true,
+            false
+        );
+
+        OutputStream os_png=new FileOutputStream(outPath);
+        ChartUtils.writeChartAsPNG(os_png,freeChart,560,400);
+
+        ChartPanel chartPanel = new ChartPanel(freeChart);
+        chartPanel.setPreferredSize(new java.awt.Dimension(560, 400));
+
+        JFrame frame = new JFrame("embeddings");
+        frame.setLocation(500, 400);
+        frame.setSize(600, 500);
+        frame.setContentPane(chartPanel);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
     }
 }

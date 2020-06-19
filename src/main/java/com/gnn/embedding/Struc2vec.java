@@ -27,7 +27,6 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 import org.apache.commons.collections.map.HashedMap;
-import org.apache.commons.lang3.StringUtils;
 
 public class Struc2vec<K, VV, EV> {
 
@@ -62,7 +61,7 @@ public class Struc2vec<K, VV, EV> {
 
         this.opt1_reduce_len = true;
         this.opt2_reduce_sim_calc = false;
-        this.opt3_reduce_layers = false;
+        this.opt3_reduce_layers = true;
         this.opt3_num_layers = 10;
 
         this.tempPath = "./temp/struc2vec/";
@@ -99,8 +98,8 @@ public class Struc2vec<K, VV, EV> {
     public Struc2vec(String path) throws IOException {
         this();
         this.graph = new Graph_Map_CSR(GraphHelper.loadEdges(path), false);
-        this.createContextGraph(10, 4);
-        this.walks = this.struc2vecWalk(100, 10, 0.3, 4);
+        this.createContextGraph(this.opt3_num_layers, this.workers);
+        this.walks = this.struc2vecWalk(this.numWalks, this.walkLength, this.stayProb, this.workers);
     }
 
     public void createContextGraph(int numLayers, int workers) throws IOException {
@@ -133,7 +132,30 @@ public class Struc2vec<K, VV, EV> {
 
             Map<K, List<K>> vertices = new HashMap<>();
             if (this.opt2_reduce_sim_calc) {
+                // store v list of degree
+                Map<Integer, Map<String, Object>> degrees = new HashMap();
+                // store degree
+                List<Integer> degreeSet = new ArrayList<>();
+                this.graph.getVertexList().forEach(v -> {
+                    int degree = ((List) this.graph.getEdge(((Vertex) v).getId())).size();
+                    if (!degreeSet.contains(degree)) {
+                        degreeSet.add(degree);
+                    }
+                    if (!degrees.containsKey(degree)) {
+                        Map<String, Object> temp = new HashMap<>();
+                        temp.put("vertices", new ArrayList<K>());
+                        degrees.put(degree, temp);
+                    }
+                    ((List<K>) degrees.get(degree).get("vertices")).add((K) ((Vertex) v).getId());
+                });
+                Collections.sort(degreeSet);
+                for (int i = 1; i < degreeSet.size(); ++i) {
+                    degrees.get(degreeSet.get(i)).put("before", degreeSet.get(i - 1));
+                    degrees.get(degreeSet.get(i - 1)).put("after", degreeSet.get(i));
+                }
+                this.graph.getVertexList().forEach(v -> {
 
+                });
             } else {
                 degreeList.keySet().forEach(k -> {
                     vertices.keySet().forEach(item -> {
@@ -361,10 +383,10 @@ public class Struc2vec<K, VV, EV> {
             .setLayerSize(embed_size)
             .setDownSamplingRate(1e-3)
             .setNumIterations(iterator)
-            .train(Iterables.partition((List<String>)this.walks.stream().flatMap(List::stream).collect(Collectors.toList()), this.walkLength));
+            .train(Iterables.partition((List<String>) this.walks.stream().flatMap(List::stream).collect(Collectors.toList()), this.walkLength));
     }
 
-    public Map<K, List<Double>> getEmbeddings() {
+    public Map<K, List<Double>> getEmbeddings() throws IOException {
         if (this.model == null) {
             System.err.println("this mode is not trained!");
         }
@@ -379,6 +401,7 @@ public class Struc2vec<K, VV, EV> {
                 e.printStackTrace();
             }
         });
+        GraphHelper.writeObject(this.embeddings, new File(String.format("%sembeddings.kryo", this.tempPath)));
         return this.embeddings;
     }
 
@@ -388,5 +411,9 @@ public class Struc2vec<K, VV, EV> {
 
     public Word2VecModel getModel() {
         return this.model;
+    }
+
+    public String getTempPath() {
+        return this.tempPath;
     }
 }

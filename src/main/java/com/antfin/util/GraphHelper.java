@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javafx.util.Pair;
 
 public class GraphHelper {
 
@@ -122,11 +123,19 @@ public class GraphHelper {
     }
 
     public static List<Edge<String, String>> loadEdges(String path){
+        List<Edge<String, String>> edges = new ArrayList<>();
+        readKVFile(path).forEach(pair->{
+            edges.add(new Edge<>(pair.getKey(), pair.getValue(), RandomWord.getWords(100)));
+        });
+        return edges;
+    }
+
+    public static List<Pair<String, String>> readKVFile(String path){
         File file = new File(path);
         if (!file.exists()) {
             System.err.println(path + " is not exist!");
         }
-        List<Edge<String, String>> edges = new ArrayList<>();
+        List<Pair<String, String>> pairs = new ArrayList<>();
         try (BufferedReader reader = Files.newBufferedReader(file.toPath(), Charset.forName("utf-8"))) {
             String line = null;
             while ((line = reader.readLine()) != null) {
@@ -138,11 +147,11 @@ public class GraphHelper {
                 {
                     System.err.println(line + " must include source and sink!");
                 }
-                edges.add(new Edge<>(vid[0], vid[1], RandomWord.getWords(100)));
+                pairs.add(new Pair<>(vid[0], vid[1]));
             }
         } catch (IOException x) {
             System.err.format("IOException: %s%n", x);
         }
-        return edges;
+        return pairs;
     }
 }

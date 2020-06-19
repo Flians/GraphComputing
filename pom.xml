@@ -19,6 +19,27 @@
     </properties>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/com.edwardraff/JSAT -->
+        <dependency>
+            <groupId>com.edwardraff</groupId>
+            <artifactId>JSAT</artifactId>
+            <version>0.0.9</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.jfree/jcommon -->
+        <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>jcommon</artifactId>
+            <version>1.0.24</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.jfree/jfreechart -->
+        <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>jfreechart</artifactId>
+            <version>1.5.0</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/com.medallia.word2vec/Word2VecJava -->
         <dependency>
             <groupId>com.medallia.word2vec</groupId>

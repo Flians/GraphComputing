@@ -55,7 +55,7 @@ public class Graph_Map_CSR<K, VV, EV> extends Graph<K, VV, EV> {
             this.vertices.add(vertex);
             this.dictV.put(vertex.getId(), this.dictV.size());
         } else {
-            if (vertex.isEmpty()) {
+            if (vertex.isEmpty() && this.dictV.get(vertex.getId()) < this.edges.size()) {
                 this.vertices.set(this.dictV.get(vertex.getId()), nullVertex);
             } else {
                 this.vertices.set(this.dictV.get(vertex.getId()), vertex);
@@ -71,24 +71,30 @@ public class Graph_Map_CSR<K, VV, EV> extends Graph<K, VV, EV> {
             // the source vertex of edge has other edges.
             this.edges.get(this.dictV.get(srcId)).add(edge);
         } else {
-            int _id = 0;
+            int dictVal = 0;
             if (!exist) {
                 this.vertices.add(nullVertex);
-                if (this.dictV.size() > 0) {
-                    _id = this.dictV.size() - 1;
-                }
+                dictVal = this.dictV.size();
             } else {
-                _id = this.dictV.get(srcId);
+                dictVal = this.dictV.get(srcId);
+                if (this.vertices.get(dictVal) != nullVertex && this.vertices.get(dictVal).isEmpty()) {
+                    this.vertices.set(dictVal, nullVertex);
+                }
             }
-            if (this.edges.size() != this.dictV.size()) {
-                this.dictV.put(this.vertices.get(this.edges.size()).getId(), _id);
+            if (this.edges.size() != this.dictV.size() && dictVal != this.edges.size()) {
+                this.dictV.put(this.vertices.get(this.edges.size()).getId(), dictVal);
+                GraphHelper.swap(this.edges.size(), dictVal, this.vertices);
             }
             this.dictV.put(srcId, this.edges.size());
-            GraphHelper.swap(this.edges.size(), _id, this.vertices);
 
             List<Edge<K, EV>> edges = new ArrayList<>();
             edges.add(edge);
             this.edges.add(edges);
+        }
+        // add target
+        if (!dictV.containsKey(edge.getTargetId())) {
+            this.vertices.add(new Vertex<>(edge.getTargetId()));
+            this.dictV.put(edge.getTargetId(), this.dictV.size());
         }
     }
 
