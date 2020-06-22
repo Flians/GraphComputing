@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.antfin</groupId>
-    <artifactId>GraphRepresentation</artifactId>
+    <artifactId>GraphComputing</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <name>GraphRepresentation</name>
-    <url>https://github.com/Flians/GraphRepresentation</url>
+    <name>GraphComputing</name>
+    <url>https://github.com/Flians/GraphComputing</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
