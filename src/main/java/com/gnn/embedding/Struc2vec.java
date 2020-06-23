@@ -154,7 +154,7 @@ public class Struc2vec<K, VV, EV> {
                     degrees.get(degreeSet.get(i)).put("before", degreeSet.get(i - 1));
                     degrees.get(degreeSet.get(i - 1)).put("after", degreeSet.get(i));
                 }
-                double selectedProb = 2*Math.log(allV.size());
+                double selectedProb = 2 * Math.log(allV.size());
                 allV.forEach(v -> {
                     int degree = ((List) this.graph.getEdge(((Vertex) v).getId())).size();
                     vertices.put((K) v.getId(), getVertices((K) v.getId(), degree, selectedProb, degrees));
@@ -237,31 +237,33 @@ public class Struc2vec<K, VV, EV> {
         );
     }
 
-    private List getVertices(K v, int degreeV, double selectedProb , Map<Integer, Map<String, Object>> degrees) {
+    private List getVertices(K v, int degreeV, double selectedProb, Map<Integer, Map<String, Object>> degrees) {
         List<K> vertices = new ArrayList();
         int cv = 0, degreeB = -1, degreeA = -1;
-        for (K ov : (List<K>)degrees.get(degreeV).get("vertices")) {
+        for (K ov : (List<K>) degrees.get(degreeV).get("vertices")) {
             if (!ov.equals(v)) {
                 vertices.add(ov);
                 ++cv;
-                if (cv > selectedProb)
+                if (cv > selectedProb) {
                     return vertices;
+                }
             }
         }
-        if (degrees.get(degreeV).containsKey("before")){
-            degreeB = (int)degrees.get(degreeV).get("before");
+        if (degrees.get(degreeV).containsKey("before")) {
+            degreeB = (int) degrees.get(degreeV).get("before");
         }
-        if (degrees.get(degreeV).containsKey("after")){
-            degreeA = (int)degrees.get(degreeV).get("after");
+        if (degrees.get(degreeV).containsKey("after")) {
+            degreeA = (int) degrees.get(degreeV).get("after");
         }
         while (degreeA != -1 || degreeB != -1) {
             int degreeN = GNNHelper.verifyDegrees(degrees, degreeV, degreeA, degreeB);
-            for (K ov : (List<K>)degrees.get(degreeN).get("vertices")) {
+            for (K ov : (List<K>) degrees.get(degreeN).get("vertices")) {
                 if (!ov.equals(v)) {
                     vertices.add(ov);
                     ++cv;
-                    if (cv > selectedProb)
+                    if (cv > selectedProb) {
                         return vertices;
+                    }
                 }
             }
             if (degreeN == degreeB) {

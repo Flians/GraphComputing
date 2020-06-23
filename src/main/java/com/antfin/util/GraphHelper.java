@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
-import javafx.util.Pair;
 
 public class GraphHelper {
 
@@ -131,7 +130,7 @@ public class GraphHelper {
     public static List<Edge<String, String>> loadEdges(String path) {
         List<Edge<String, String>> edges = new ArrayList<>();
         readKVFile(path).forEach((tar, srcs) -> {
-            srcs.forEach(src->{
+            srcs.forEach(src -> {
                 edges.add(new Edge<>(src, tar, RandomWord.getWords(100)));
             });
         });
@@ -175,7 +174,7 @@ public class GraphHelper {
     }
 
     public static <K> double getClosestDistance(K source, K target, Graph graph, Map<K, List<Double>> embedding, DistanceFunction disFun) {
-        if (source.equals(target)){
+        if (source.equals(target)) {
             return 0.0;
         }
         double distanceBetweenNodes = 0;
@@ -212,8 +211,8 @@ public class GraphHelper {
         while (!candidate.isEmpty()) {
             K cur = candidate.poll();
             closed[dictV.get(cur)] = true;
-            for (Object e : ((List) graph.getEdge(cur))){
-                K nbr = (K) ((Edge)e).getTargetId();
+            for (Object e : ((List) graph.getEdge(cur))) {
+                K nbr = (K) ((Edge) e).getTargetId();
                 if (!closed[dictV.get(nbr)]) {
                     double h = disFun.calcDistance(embedding.get(nbr), embedding.get(target));
                     double g = distance[dictV.get(cur)][1] + distanceBetweenNodes;
