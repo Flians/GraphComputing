@@ -22,16 +22,17 @@ public class Struc2vecTest {
 
     @Test
     public void test_struc2vec() throws IOException, InterruptedException {
-        Struc2vec struc2vec = new Struc2vec("/Users/flynn/IdeaProjects/GraphRepresentation/src/test/data/brazil-airports.edgelist");
+        Struc2vec struc2vec = new Struc2vec("/Users/flynn/IdeaProjects/GraphComputing/src/test/data/brazil-airports.edgelist");
         struc2vec.train(128, 5, 4, 5);
         struc2vec.getEmbeddings();
-        GNNHelper.showEmbeddings(struc2vec.getEmbeddings(), "/Users/flynn/IdeaProjects/GraphRepresentation/src/test/data/labels-brazil-airports.txt", struc2vec.getTempPath()+"embedding.png");
+        GNNHelper.showEmbeddings(struc2vec.getEmbeddings(), "/Users/flynn/IdeaProjects/GraphComputing/src/test/data/labels-brazil-airports.txt", struc2vec.getTempPath()+"embedding.png");
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        Struc2vec struc2vec = new Struc2vec("/Users/flynn/IdeaProjects/GraphRepresentation/src/test/data/brazil-airports.edgelist");
+        Struc2vec struc2vec = new Struc2vec("/Users/flynn/IdeaProjects/GraphComputing/src/test/data/brazil-airports.edgelist");
         struc2vec.train(128, 5, 4, 5);
         struc2vec.getEmbeddings();
-        GNNHelper.showEmbeddings(struc2vec.getEmbeddings(), "/Users/flynn/IdeaProjects/GraphRepresentation/src/test/data/labels-brazil-airports.txt",struc2vec.getTempPath()+"embedding.png");
+        GNNHelper.showEmbeddings(struc2vec.getEmbeddings(), "/Users/flynn/IdeaProjects/GraphComputing/src/test/data/labels-brazil-airports.txt",struc2vec.getTempPath()+"embedding.png");
+        GNNHelper.evaluateEmbeddings(struc2vec.getEmbeddings(), "/Users/flynn/IdeaProjects/GraphComputing/src/test/data/labels-brazil-airports.txt");
     }
 }

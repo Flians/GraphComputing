@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Stack;
-import javafx.util.Pair;
 import javax.swing.JFrame;
 import jsat.SimpleDataSet;
 import jsat.classifiers.CategoricalData;
@@ -28,6 +27,13 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import weka.classifiers.Evaluation;
+import weka.classifiers.bayes.NaiveBayesUpdateable;
+import weka.core.Attribute;
+import weka.core.Debug.Random;
+import weka.core.DenseInstance;
+import weka.core.Instance;
+import weka.core.Instances;
 
 public class GNNHelper {
 
@@ -61,6 +67,20 @@ public class GNNHelper {
         }
         if (l2 != 0) {
             res.add(l2);
+        }
+        return res;
+    }
+
+    public static int verifyDegrees(Map<Integer, Map<String, Object>> degrees, int degreesV, int degreesA, int degreesB) {
+        int res = 0;
+        if (degreesB == -1) {
+            res = degreesA;
+        } else if (degreesA == -1) {
+            res = degreesB;
+        } else if (Math.abs(degreesV - degreesB) < Math.abs(degreesV - degreesA)) {
+            res = degreesB;
+        } else {
+            res = degreesA;
         }
         return res;
     }
@@ -196,18 +216,24 @@ public class GNNHelper {
     }
 
     public static <K> void showEmbeddings(Map<K, List<Double>> embeddings, String labelPath, String outPath) throws IOException {
-        List<Pair<String, String>> labels = GraphHelper.readKVFile(labelPath);
+        Map<String, List<String>> labels = GraphHelper.readKVFile(labelPath);
+        Map<String, List<Integer>> colorId = new HashMap<>();
         TSNE instance = new TSNE();
         instance.setTargetDimension(2);
 
         Matrix orig_dim = new DenseMatrix(embeddings.size(), embeddings.values().iterator().next().size());
         int i = 0, j = 0;
-        for (Pair label:labels) {
-            j = 0;
-            for (Double val : embeddings.get(label.getKey())) {
-                orig_dim.set(i, j++, val);
+        for (Map.Entry<String, List<String>> item : labels.entrySet()) {
+            List<Integer> vs = new ArrayList<>();
+            colorId.put(item.getKey(), vs);
+            for (String v : item.getValue()) {
+                colorId.get(item.getKey()).add(i);
+                j = 0;
+                for (Double val : embeddings.get(v)) {
+                    orig_dim.set(i, j++, val);
+                }
+                i++;
             }
-            i++;
         }
         SimpleDataSet proj = new SimpleDataSet(new CategoricalData[0], orig_dim.cols());
         for (i = 0; i < orig_dim.rows(); i++) {
@@ -215,19 +241,7 @@ public class GNNHelper {
         }
         SimpleDataSet nodePosition = instance.transform(proj);
 
-        Map<String, List<Integer>> colorId = new HashMap<>();
-        for (i=0; i<labels.size(); ++i) {
-            if(!colorId.containsKey(labels.get(i).getValue())) {
-                List<Integer> index = new ArrayList<>();
-                index.add(i);
-                colorId.put(labels.get(i).getValue(), index);
-            } else {
-                colorId.get(labels.get(i).getValue()).add(i);
-            }
-        }
-
         XYSeriesCollection dataset = new XYSeriesCollection();
-
         colorId.forEach((label, ids) -> {
             XYSeries XY = new XYSeries(label);
             ids.forEach(id -> {
@@ -247,8 +261,8 @@ public class GNNHelper {
             false
         );
 
-        OutputStream os_png=new FileOutputStream(outPath);
-        ChartUtils.writeChartAsPNG(os_png,freeChart,560,400);
+        OutputStream os_png = new FileOutputStream(outPath);
+        ChartUtils.writeChartAsPNG(os_png, freeChart, 560, 400);
 
         ChartPanel chartPanel = new ChartPanel(freeChart);
         chartPanel.setPreferredSize(new java.awt.Dimension(560, 400));
@@ -259,5 +273,44 @@ public class GNNHelper {
         frame.setContentPane(chartPanel);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
+    }
+
+    public static <K> void evaluateEmbeddings(Map<K, List<Double>> embeddings, String labelPath) {
+        Map<String, List<String>> labels = GraphHelper.readKVFile(labelPath);
+        try {
+            int xSize = embeddings.values().iterator().next().size();
+            ArrayList<Attribute> attributes = new ArrayList<Attribute>();
+            for (int i=0; i<xSize; i++) {
+                attributes.add(new Attribute("coordinate_" + i));
+            }
+            List<String> classes = new ArrayList<>(labels.keySet());
+            attributes.add(new Attribute("class", classes));
+
+            Instances instances = new Instances("graph", attributes, 0);
+            instances.setClassIndex(instances.numAttributes() - 1);
+
+            labels.forEach((label, vs) -> {
+                double num[] = new double[instances.numAttributes()];
+                Instance instance = new DenseInstance(1, num);
+                vs.forEach(v -> {
+                    for (int j=0; j<xSize; j++) {
+                        num[j] = embeddings.get(v).get(j);
+                    }
+                    num[instances.classIndex()] = instances.attribute(instances.classIndex()).indexOfValue(label);
+                    instances.add(instance);
+                });
+            });
+
+            //evaluate
+            Evaluation eval = new Evaluation(instances);
+            NaiveBayesUpdateable method = new NaiveBayesUpdateable();
+            // J48 method = new J48();
+            eval.crossValidateModel(method, instances, 10, new Random(1));
+            System.out.println(eval.toMatrixString());
+            System.out.println(eval.toSummaryString());
+            System.out.println(eval.toClassDetailsString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

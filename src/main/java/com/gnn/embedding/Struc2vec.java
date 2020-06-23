@@ -60,7 +60,7 @@ public class Struc2vec<K, VV, EV> {
         this.workers = 4;
 
         this.opt1_reduce_len = true;
-        this.opt2_reduce_sim_calc = false;
+        this.opt2_reduce_sim_calc = true;
         this.opt3_reduce_layers = true;
         this.opt3_num_layers = 10;
 
@@ -136,7 +136,8 @@ public class Struc2vec<K, VV, EV> {
                 Map<Integer, Map<String, Object>> degrees = new HashMap();
                 // store degree
                 List<Integer> degreeSet = new ArrayList<>();
-                this.graph.getVertexList().forEach(v -> {
+                List<Vertex> allV = this.graph.getVertexList();
+                allV.forEach(v -> {
                     int degree = ((List) this.graph.getEdge(((Vertex) v).getId())).size();
                     if (!degreeSet.contains(degree)) {
                         degreeSet.add(degree);
@@ -153,8 +154,10 @@ public class Struc2vec<K, VV, EV> {
                     degrees.get(degreeSet.get(i)).put("before", degreeSet.get(i - 1));
                     degrees.get(degreeSet.get(i - 1)).put("after", degreeSet.get(i));
                 }
-                this.graph.getVertexList().forEach(v -> {
-
+                double selectedProb = 2*Math.log(allV.size());
+                allV.forEach(v -> {
+                    int degree = ((List) this.graph.getEdge(((Vertex) v).getId())).size();
+                    vertices.put((K) v.getId(), getVertices((K) v.getId(), degree, selectedProb, degrees));
                 });
             } else {
                 degreeList.keySet().forEach(k -> {
@@ -232,6 +235,46 @@ public class Struc2vec<K, VV, EV> {
         return (Map<K, List<List<Object>>>) this.graph.getVertexList().stream().collect(
             Collectors.toMap(k -> ((Vertex) k).getId(), k -> getOrderedDegreeListOfNode((K) ((Vertex) k).getId(), numLayers))
         );
+    }
+
+    private List getVertices(K v, int degreeV, double selectedProb , Map<Integer, Map<String, Object>> degrees) {
+        List<K> vertices = new ArrayList();
+        int cv = 0, degreeB = -1, degreeA = -1;
+        for (K ov : (List<K>)degrees.get(degreeV).get("vertices")) {
+            if (!ov.equals(v)) {
+                vertices.add(ov);
+                ++cv;
+                if (cv > selectedProb)
+                    return vertices;
+            }
+        }
+        if (degrees.get(degreeV).containsKey("before")){
+            degreeB = (int)degrees.get(degreeV).get("before");
+        }
+        if (degrees.get(degreeV).containsKey("after")){
+            degreeA = (int)degrees.get(degreeV).get("after");
+        }
+        while (degreeA != -1 || degreeB != -1) {
+            int degreeN = GNNHelper.verifyDegrees(degrees, degreeV, degreeA, degreeB);
+            for (K ov : (List<K>)degrees.get(degreeN).get("vertices")) {
+                if (!ov.equals(v)) {
+                    vertices.add(ov);
+                    ++cv;
+                    if (cv > selectedProb)
+                        return vertices;
+                }
+            }
+            if (degreeN == degreeB) {
+                if (degrees.get(degreeV).containsKey("before")) {
+                    degreeB = (int) degrees.get(degreeV).get("before");
+                }
+            } else {
+                if (degrees.get(degreeV).containsKey("after")) {
+                    degreeA = (int) degrees.get(degreeV).get("after");
+                }
+            }
+        }
+        return vertices;
     }
 
     public Map<Pair<K, K>, List<Double>> computeDtwDist(Map<K, List<K>> part, Map<K, List<List<Object>>> orderedDegreeList, DistanceFunction disFun) {

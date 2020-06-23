@@ -130,18 +130,20 @@ public class GraphHelper {
 
     public static List<Edge<String, String>> loadEdges(String path) {
         List<Edge<String, String>> edges = new ArrayList<>();
-        readKVFile(path).forEach(pair -> {
-            edges.add(new Edge<>(pair.getKey(), pair.getValue(), RandomWord.getWords(100)));
+        readKVFile(path).forEach((tar, srcs) -> {
+            srcs.forEach(src->{
+                edges.add(new Edge<>(src, tar, RandomWord.getWords(100)));
+            });
         });
         return edges;
     }
 
-    public static List<Pair<String, String>> readKVFile(String path) {
+    public static Map<String, List<String>> readKVFile(String path) {
         File file = new File(path);
         if (!file.exists()) {
             System.err.println(path + " is not exist!");
         }
-        List<Pair<String, String>> pairs = new ArrayList<>();
+        Map<String, List<String>> pairs = new HashMap<>();
         try (BufferedReader reader = Files.newBufferedReader(file.toPath(), Charset.forName("utf-8"))) {
             String line = null;
             while ((line = reader.readLine()) != null) {
@@ -153,7 +155,11 @@ public class GraphHelper {
                 if (vid.length != 2) {
                     System.err.println(line + " must include source and sink!");
                 }
-                pairs.add(new Pair<>(vid[0], vid[1]));
+                if (!pairs.containsKey(vid[1])) {
+                    List<String> temp = new ArrayList<>();
+                    pairs.put(vid[1], temp);
+                }
+                pairs.get(vid[1]).add(vid[0]);
             }
         } catch (IOException x) {
             System.err.format("IOException: %s%n", x);
