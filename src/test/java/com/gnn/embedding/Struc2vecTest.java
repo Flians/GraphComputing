@@ -1,5 +1,8 @@
 package com.gnn.embedding;
 
+import com.antfin.util.EuclideanDistance;
+import com.antfin.util.GraphHelper;
+import com.antfin.util.OptDegreeDistance;
 import com.gnn.util.GNNHelper;
 import java.io.IOException;
 import org.junit.After;
@@ -24,6 +27,7 @@ public class Struc2vecTest {
         struc2vec.train(128, 5, 4, 5);
         struc2vec.getEmbeddings();
         GNNHelper.showEmbeddings(struc2vec.getEmbeddings(), "/Users/flynn/IdeaProjects/GraphComputing/src/test/data/labels-brazil-airports.txt", struc2vec.getTempPath() + "embedding.png");
+        GNNHelper.evaluateEmbeddings(struc2vec.getEmbeddings(), "/Users/flynn/IdeaProjects/GraphComputing/src/test/data/labels-brazil-airports.txt");
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
@@ -32,5 +36,6 @@ public class Struc2vecTest {
         struc2vec.getEmbeddings();
         GNNHelper.showEmbeddings(struc2vec.getEmbeddings(), "/Users/flynn/IdeaProjects/GraphComputing/src/test/data/labels-brazil-airports.txt", struc2vec.getTempPath() + "embedding.png");
         GNNHelper.evaluateEmbeddings(struc2vec.getEmbeddings(), "/Users/flynn/IdeaProjects/GraphComputing/src/test/data/labels-brazil-airports.txt");
+        System.out.println(GraphHelper.getShortestDistance("1", "90", struc2vec.getGraph(), struc2vec.getEmbeddings(), new EuclideanDistance()));
     }
 }

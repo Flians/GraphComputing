@@ -169,15 +169,12 @@ public class GraphHelper {
     /**
      * return the closest distance from source to target by A* search algorithm.
      */
-    public static <K> double getClosestDistance(Vertex source, Vertex target, Graph graph, Map<K, List<Double>> embedding, DistanceFunction disFun) {
-        return getClosestDistance((K) source.getId(), (K) target.getId(), graph, embedding, disFun);
+    public static <K> double getShortestDistance(Vertex source, Vertex target, Graph graph, Map<K, List<Double>> embedding, DistanceFunction disFun) {
+        return getShortestDistance((K) source.getId(), (K) target.getId(), graph, embedding, disFun);
     }
 
-    public static <K> double getClosestDistance(K source, K target, Graph graph, Map<K, List<Double>> embedding, DistanceFunction disFun) {
-        if (source.equals(target)) {
-            return 0.0;
-        }
-        double distanceBetweenNodes = 0;
+    public static <K> double getShortestDistance(K source, K target, Graph graph, Map<K, List<Double>> embedding, DistanceFunction disFun) {
+        double distanceBetweenNodes = 1;
         Map<K, Integer> dictV;
         // build Adjacency Matrix
         if (graph instanceof Graph_Map_CSR) {
@@ -187,16 +184,14 @@ public class GraphHelper {
             System.err.format("The type of graph is not Graph_Map_CSR!");
         }
         // [H,G,F]
-        double[][] distance = new double[dictV.size()][2];
-        Queue<K> candidate = new PriorityQueue<K>(new Comparator<K>() {
-            public int compare(K c1, K c2) {
-                if (distance[dictV.get(c1)][2] > distance[dictV.get(c2)][2]) {
-                    return 1;
-                } else if (distance[dictV.get(c1)][2] == distance[dictV.get(c2)][2]) {
-                    return 0;
-                } else {
-                    return -1;
-                }
+        double[][] distance = new double[dictV.size()][3];
+        Queue<K> candidate = new PriorityQueue<>((c1, c2) -> {
+            if (distance[dictV.get(c1)][2] < distance[dictV.get(c2)][2]) {
+                return -1;
+            } else if (distance[dictV.get(c1)][2] == distance[dictV.get(c2)][2]) {
+                return 0;
+            } else {
+                return 1;
             }
         });
         boolean[] closed = new boolean[dictV.size()];
@@ -211,6 +206,16 @@ public class GraphHelper {
         while (!candidate.isEmpty()) {
             K cur = candidate.poll();
             closed[dictV.get(cur)] = true;
+            if (cur.equals(target)) {
+                StringBuilder sb = new StringBuilder();
+                while (shortestPath.containsKey(cur) && !cur.equals(source)) {
+                    sb.append(cur).append(" <- ");
+                    cur = shortestPath.get(cur);
+                }
+                sb.append(source);
+                System.out.println("The path is: " + sb.toString());
+                return distance[dictV.get(target)][1];
+            }
             for (Object e : ((List) graph.getEdge(cur))) {
                 K nbr = (K) ((Edge) e).getTargetId();
                 if (!closed[dictV.get(nbr)]) {
@@ -220,28 +225,21 @@ public class GraphHelper {
 
                     if (!candidate.contains(nbr)) {
                         shortestPath.put(nbr, cur);
-                        candidate.add(nbr);
                         distance[dictV.get(nbr)][0] = h;
                         distance[dictV.get(nbr)][1] = g;
                         distance[dictV.get(nbr)][2] = f;
+                        candidate.add(nbr);
                     } else if (f < distance[dictV.get(nbr)][2]) {
                         shortestPath.put(nbr, cur);
                         distance[dictV.get(nbr)][1] = g;
                         distance[dictV.get(nbr)][2] = f;
+                        candidate.remove(nbr);
+                        candidate.add(nbr);
                     }
                 }
             }
-            if (cur.equals(target)) {
-                StringBuilder sb = new StringBuilder();
-                while (!shortestPath.get(target).equals(source)) {
-                    sb.append(target).append(" <- ");
-                    target = shortestPath.get(target);
-                }
-                sb.append(source);
-                System.out.println("The path is: " + sb.reverse().toString());
-                return distance[dictV.get(target)][1];
-            }
         }
+        System.out.println("There is no path from " + source + " to " + target);
         return distance[dictV.get(target)][1];
     }
 }
