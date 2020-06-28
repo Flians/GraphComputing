@@ -67,7 +67,7 @@ public class Struc2vec<K, VV, EV> {
         this.tempPath = "./temp/struc2vec/";
     }
 
-    public Struc2vec(Graph graph, int walkLength, int numWalks, int workers, double stayProb, boolean opt1_reduce_len, boolean opt2_reduce_sim_calc, boolean opt3_reduce_layers, int opt3_num_layers, String tempPath) {
+    public Struc2vec(Graph graph, int walkLength, int numWalks, int workers, double stayProb, boolean opt1_reduce_len, boolean opt2_reduce_sim_calc, boolean opt3_reduce_layers, int opt3_num_layers, String tempPath) throws IOException {
         this();
         this.graph = graph;
         this.walkLength = walkLength;
@@ -77,38 +77,32 @@ public class Struc2vec<K, VV, EV> {
         this.opt1_reduce_len = opt1_reduce_len;
         this.opt2_reduce_sim_calc = opt2_reduce_sim_calc;
         this.opt3_reduce_layers = opt3_reduce_layers;
-        this.opt3_num_layers = opt3_num_layers;
+        if (this.opt3_reduce_layers) {
+            this.opt3_num_layers = opt3_num_layers;
+        }
         this.tempPath = tempPath;
+        this.createContextGraph();
+        this.walks = this.struc2vecWalk();
     }
 
-    public Struc2vec(String path, int walkLength, int numWalks, int workers, double stayProb, boolean opt1_reduce_len, boolean opt2_reduce_sim_calc, boolean opt3_reduce_layers, int opt3_num_layers, String tempPath) {
-        this();
-        this.graph = new Graph_Map_CSR(GraphHelper.loadEdges(path), false);
-        this.walkLength = walkLength;
-        this.numWalks = numWalks;
-        this.workers = workers;
-        this.stayProb = stayProb;
-        this.opt1_reduce_len = opt1_reduce_len;
-        this.opt2_reduce_sim_calc = opt2_reduce_sim_calc;
-        this.opt3_reduce_layers = opt3_reduce_layers;
-        this.opt3_num_layers = opt3_num_layers;
-        this.tempPath = tempPath;
+    public Struc2vec(String path, int walkLength, int numWalks, int workers, double stayProb, boolean opt1_reduce_len, boolean opt2_reduce_sim_calc, boolean opt3_reduce_layers, int opt3_num_layers, String tempPath) throws IOException {
+        this(new Graph_Map_CSR(GraphHelper.loadEdges(path), false), walkLength, numWalks, workers, stayProb, opt1_reduce_len, opt2_reduce_sim_calc, opt3_reduce_layers, opt3_num_layers, tempPath);
     }
 
     public Struc2vec(String path) throws IOException {
         this();
         this.graph = new Graph_Map_CSR(GraphHelper.loadEdges(path), false);
-        this.createContextGraph(this.opt3_num_layers, this.workers);
-        this.walks = this.struc2vecWalk(this.numWalks, this.walkLength, this.stayProb, this.workers);
+        this.createContextGraph();
+        this.walks = this.struc2vecWalk();
     }
 
-    public void createContextGraph(int numLayers, int workers) throws IOException {
-        Map<Pair<K, K>, List<Double>> pairDistance = computeStructuralDistance(numLayers, workers);
+    public void createContextGraph() throws IOException {
+        Map<Pair<K, K>, List<Double>> pairDistance = computeStructuralDistance();
         buildWeightedLayeredGraph(pairDistance);
     }
 
 
-    public Map<Pair<K, K>, List<Double>> computeStructuralDistance(int numLayers, int workers) throws IOException {
+    public Map<Pair<K, K>, List<Double>> computeStructuralDistance() throws IOException {
         File structDistanceFile = new File(this.tempPath + "struct_distance.kryo");
         Map<Pair<K, K>, List<Double>> structDistance;
         if (structDistanceFile.exists()) {
@@ -126,7 +120,7 @@ public class Struc2vec<K, VV, EV> {
             if (degreeListFile.exists()) {
                 degreeList = (Map<K, List<List<Object>>>) GraphHelper.loadObject(degreeListFile);
             } else {
-                degreeList = computeOrderedDegreeList(numLayers);
+                degreeList = computeOrderedDegreeList();
                 GraphHelper.writeObject(degreeList, degreeListFile);
             }
 
@@ -181,14 +175,14 @@ public class Struc2vec<K, VV, EV> {
         return structDistance;
     }
 
-    public List<List<Object>> getOrderedDegreeListOfNode(K kid, int numLayers) {
+    public List<List<Object>> getOrderedDegreeListOfNode(K kid) {
         List<List<Object>> orderedDegreeSeqList = new ArrayList<>();
         Queue<K> bfs = new LinkedList<>();
         Map<K, Boolean> visited = new HashMap<>();
         bfs.add(kid);
         visited.put(kid, true);
 
-        while (!bfs.isEmpty() && orderedDegreeSeqList.size() <= numLayers) {
+        while (!bfs.isEmpty() && orderedDegreeSeqList.size() <= this.opt3_num_layers) {
             int nums = bfs.size();
             Object degreeList;
             if (this.opt1_reduce_len) {
@@ -231,9 +225,9 @@ public class Struc2vec<K, VV, EV> {
         return orderedDegreeSeqList;
     }
 
-    public Map<K, List<List<Object>>> computeOrderedDegreeList(int numLayers) {
+    public Map<K, List<List<Object>>> computeOrderedDegreeList() {
         return (Map<K, List<List<Object>>>) this.graph.getVertexList().stream().collect(
-            Collectors.toMap(k -> ((Vertex) k).getId(), k -> getOrderedDegreeListOfNode((K) ((Vertex) k).getId(), numLayers))
+            Collectors.toMap(k -> ((Vertex) k).getId(), k -> getOrderedDegreeListOfNode((K) ((Vertex) k).getId()))
         );
     }
 
@@ -404,7 +398,7 @@ public class Struc2vec<K, VV, EV> {
         GraphHelper.writeObject(gamma, new File(String.format("%sgamma.kryo", this.tempPath)));
     }
 
-    public List<List<K>> struc2vecWalk(int numWalks, int walkLength, double stayProb, int workers) throws IOException {
+    public List<List<K>> struc2vecWalk() throws IOException {
         List<Map<K, List<Double>>> layersAlias = (List<Map<K, List<Double>>>) GraphHelper.loadObject(new File(String.format("%slayers_alias.kryo", this.tempPath)));
         List<Map<K, List<Double>>> layersAccept = (List<Map<K, List<Double>>>) GraphHelper.loadObject(new File(String.format("%slayers_accept.kryo", this.tempPath)));
         List<Map<K, List<K>>> layersAdj = (List<Map<K, List<K>>>) GraphHelper.loadObject(new File(String.format("%slayers_adj.kryo", this.tempPath)));
@@ -412,8 +406,8 @@ public class Struc2vec<K, VV, EV> {
 
         int initialLayer = 0;
         List<List<K>> walks = new ArrayList();
-        GNNHelper.partitionNumber(numWalks, workers).parallelStream().parallel().forEach(part -> {
-            walks.addAll(GNNHelper.simulateWalks(this.graph.getVertexList(), numWalks, walkLength, stayProb, initialLayer, layersAlias, layersAccept, layersAdj, gamma));
+        GNNHelper.partitionNumber(this.numWalks, this.workers).parallelStream().parallel().forEach(part -> {
+            this.walks.addAll(GNNHelper.simulateWalks(this.graph.getVertexList(), this.numWalks, this.walkLength, this.stayProb, initialLayer, layersAlias, layersAccept, layersAdj, gamma));
         });
         return walks;
     }
