@@ -11,8 +11,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JFrame;
 import jsat.SimpleDataSet;
 import jsat.classifiers.CategoricalData;
@@ -189,7 +189,6 @@ public class GNNHelper {
                     double rx = Math.random();
                     // same layer
                     if (r < stayProb) {
-                        layersAdj.get(layer).get(v.getId());
                         int vid = (int) (Math.random() * layersAccept.get(layer).get(v.getId()).size());
                         if (rx >= layersAccept.get(layer).get(v.getId()).get(vid)) {
                             vid = layersAlias.get(layer).get(v.getId()).get(vid).intValue();
@@ -201,7 +200,7 @@ public class GNNHelper {
                         double w = Math.log(gamma.get(layer).get(v.getId()) + Math.E);
                         double probUp = w / (w + 1);
                         if (rx > probUp && layer > initialLayer) {
-                            layer = layer - 1;
+                            --layer;
                         } else {
                             if (layer + 1 < layersAdj.size() && layersAdj.get(layer + 1).containsKey(v.getId())) {
                                 ++layer;

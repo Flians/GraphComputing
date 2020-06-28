@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 import org.apache.commons.collections.map.HashedMap;
@@ -46,7 +47,11 @@ public class Struc2vec<K, VV, EV> {
     private int opt3_num_layers;
 
     private String tempPath;
-    private boolean reuse = false;
+
+    private List<Map<K, List<K>>> layersAdj;
+    private List<Map<K, List<Double>>> layersAlias;
+    private List<Map<K, List<Double>>> layersAccept;
+    private List<Map<K, Integer>> gamma;
 
     private List<List<K>> walks;
     private Word2VecModel model;
@@ -96,13 +101,13 @@ public class Struc2vec<K, VV, EV> {
         this.walks = this.struc2vecWalk();
     }
 
-    public void createContextGraph() throws IOException {
+    private void createContextGraph() throws IOException {
         Map<Pair<K, K>, List<Double>> pairDistance = computeStructuralDistance();
         buildWeightedLayeredGraph(pairDistance);
     }
 
 
-    public Map<Pair<K, K>, List<Double>> computeStructuralDistance() throws IOException {
+    private Map<Pair<K, K>, List<Double>> computeStructuralDistance() throws IOException {
         File structDistanceFile = new File(this.tempPath + "struct_distance.kryo");
         Map<Pair<K, K>, List<Double>> structDistance;
         if (structDistanceFile.exists()) {
@@ -175,7 +180,7 @@ public class Struc2vec<K, VV, EV> {
         return structDistance;
     }
 
-    public List<List<Object>> getOrderedDegreeListOfNode(K kid) {
+    private List<List<Object>> getOrderedDegreeListOfNode(K kid) {
         List<List<Object>> orderedDegreeSeqList = new ArrayList<>();
         Queue<K> bfs = new LinkedList<>();
         Map<K, Boolean> visited = new HashMap<>();
@@ -225,7 +230,7 @@ public class Struc2vec<K, VV, EV> {
         return orderedDegreeSeqList;
     }
 
-    public Map<K, List<List<Object>>> computeOrderedDegreeList() {
+    private Map<K, List<List<Object>>> computeOrderedDegreeList() {
         return (Map<K, List<List<Object>>>) this.graph.getVertexList().stream().collect(
             Collectors.toMap(k -> ((Vertex) k).getId(), k -> getOrderedDegreeListOfNode((K) ((Vertex) k).getId()))
         );
@@ -273,7 +278,7 @@ public class Struc2vec<K, VV, EV> {
         return vertices;
     }
 
-    public Map<Pair<K, K>, List<Double>> computeDtwDist(Map<K, List<K>> part, Map<K, List<List<Object>>> orderedDegreeList, DistanceFunction disFun) {
+    private Map<Pair<K, K>, List<Double>> computeDtwDist(Map<K, List<K>> part, Map<K, List<List<Object>>> orderedDegreeList, DistanceFunction disFun) {
         Map<Pair<K, K>, List<Double>> dtwDistance = new HashedMap();
         part.forEach((v1, neighbors) -> {
             List<List<Object>> listV1 = orderedDegreeList.get(v1);
@@ -293,7 +298,7 @@ public class Struc2vec<K, VV, EV> {
         return dtwDistance;
     }
 
-    public void computeFk(Map<Pair<K, K>, List<Double>> distance) {
+    private void computeFk(Map<Pair<K, K>, List<Double>> distance) {
         distance.entrySet().forEach(item -> {
             for (int i = 1; i < item.getValue().size(); ++i) {
                 item.getValue().set(i, item.getValue().get(i) + item.getValue().get(i - 1));
@@ -301,9 +306,9 @@ public class Struc2vec<K, VV, EV> {
         });
     }
 
-    public void buildWeightedLayeredGraph(Map<Pair<K, K>, List<Double>> pairDistance) throws IOException {
+    private void buildWeightedLayeredGraph(Map<Pair<K, K>, List<Double>> pairDistance) throws IOException {
         List<Map<Pair<K, K>, Double>> layersDistance = new ArrayList<>();
-        List<Map<K, List<K>>> layersAdj = new ArrayList<>();
+        layersAdj = new ArrayList<>();
 
         pairDistance.forEach((pair, distance) -> {
             for (int i = 0; i < distance.size(); ++i) {
@@ -325,14 +330,14 @@ public class Struc2vec<K, VV, EV> {
                 layersAdj.get(i).get(pair.getValue()).add(pair.getKey());
             }
         });
-        GraphHelper.writeObject(layersAdj, new File(String.format("%slayers_adj.kryo", this.tempPath)));
-        getTransitionProbabilityInLayer(layersDistance, layersAdj);
-        getTransitionProbabilityBetweenLayer();
+        // GraphHelper.writeObject(layersAdj, new File(String.format("%slayers_adj.kryo", this.tempPath)));
+        getTransitionProbability(layersDistance, layersAdj);
     }
 
-    public void getTransitionProbabilityInLayer(List<Map<Pair<K, K>, Double>> layersDistance, List<Map<K, List<K>>> layersAdj) throws IOException {
-        List<Map<K, List<Double>>> layersAlias = new ArrayList<>(layersAdj.size());
-        List<Map<K, List<Double>>> layersAccept = new ArrayList<>(layersAdj.size());
+    private void getTransitionProbability(List<Map<Pair<K, K>, Double>> layersDistance, List<Map<K, List<K>>> layersAdj) throws IOException {
+        layersAlias = new ArrayList<>(layersAdj.size());
+        layersAccept = new ArrayList<>(layersAdj.size());
+        gamma = new ArrayList<>();
         for (int layer = 0; layer < layersAdj.size(); ++layer) {
             Map<Pair<K, K>, Double> layerDistance = layersDistance.get(layer);
             Map<K, List<Double>> node_alias_dict = new HashMap<>();
@@ -358,58 +363,38 @@ public class Struc2vec<K, VV, EV> {
                 norm_weights.put(v, edgeWeight);
                 GNNHelper.createAliasTable(edgeWeight, v, node_alias_dict, node_accept_dict);
             });
-            GraphHelper.writeObject(norm_weights, new File(String.format("%snorm_weights_distance_layer-%d.kryo", this.tempPath, layer)));
             layersAlias.add(node_alias_dict);
             layersAccept.add(node_accept_dict);
-        }
-        GraphHelper.writeObject(layersAlias, new File(String.format("%slayers_alias.kryo", this.tempPath)));
-        GraphHelper.writeObject(layersAccept, new File(String.format("%slayers_accept.kryo", this.tempPath)));
-    }
 
-    public void getTransitionProbabilityBetweenLayer() throws IOException {
-        List<Double> averageWeight = new ArrayList<>();
-        List<Map<K, Integer>> gamma = new ArrayList<>();
-        int layer = 0;
-        while (true) {
-            File layerK = new File(String.format("%snorm_weights_distance_layer-%d.kryo", tempPath, layer));
-            if (layerK.exists()) {
-                double sumWeights = 0.0;
-                double sumEdges = 0.0;
-                Map<K, List<Double>> norm_weights = (Map<K, List<Double>>) GraphHelper.loadObject(layerK);
-                for (Entry<K, List<Double>> entry : norm_weights.entrySet()) {
-                    K v = entry.getKey();
-                    List<Double> weightList = entry.getValue();
-                    sumWeights += entry.getValue().stream().mapToDouble(Double::doubleValue).sum();
-                    sumEdges += entry.getValue().size();
-                }
-                averageWeight.add(sumWeights / sumEdges);
-                Map<K, Integer> layerGamma = new HashMap<>();
-                double avg = averageWeight.get(layer);
-                norm_weights.forEach((v, weightList) -> {
-                    layerGamma.put(v, (int) weightList.stream().filter(w -> w > avg).count());
-                });
-                gamma.add(layerGamma);
-                ++layer;
-            } else {
-                break;
+            double sumWeights = 0.0;
+            double sumEdges = 0.0;
+            for (Entry<K, List<Double>> entry : norm_weights.entrySet()) {
+                sumWeights += entry.getValue().stream().mapToDouble(Double::doubleValue).sum();
+                sumEdges += entry.getValue().size();
             }
+            double averageWeight = sumWeights / sumEdges;
+            Map<K, Integer> layerGamma = new HashMap<>();
+            norm_weights.forEach((v, weightList) -> layerGamma.put(v, (int) weightList.stream().filter(w -> w > averageWeight).count()));
+            gamma.add(layerGamma);
         }
-        GraphHelper.writeObject(averageWeight, new File(String.format("%saverage_weight.kryo", this.tempPath)));
-        GraphHelper.writeObject(gamma, new File(String.format("%sgamma.kryo", this.tempPath)));
+        // GraphHelper.writeObject(layersAlias, new File(String.format("%slayers_alias.kryo", this.tempPath)));
+        // GraphHelper.writeObject(layersAccept, new File(String.format("%slayers_accept.kryo", this.tempPath)));
+        // GraphHelper.writeObject(gamma, new File(String.format("%sgamma.kryo", this.tempPath)));
     }
 
-    public List<List<K>> struc2vecWalk() throws IOException {
-        List<Map<K, List<Double>>> layersAlias = (List<Map<K, List<Double>>>) GraphHelper.loadObject(new File(String.format("%slayers_alias.kryo", this.tempPath)));
-        List<Map<K, List<Double>>> layersAccept = (List<Map<K, List<Double>>>) GraphHelper.loadObject(new File(String.format("%slayers_accept.kryo", this.tempPath)));
-        List<Map<K, List<K>>> layersAdj = (List<Map<K, List<K>>>) GraphHelper.loadObject(new File(String.format("%slayers_adj.kryo", this.tempPath)));
-        List<Map<K, Integer>> gamma = (List<Map<K, Integer>>) GraphHelper.loadObject(new File(String.format("%sgamma.kryo", this.tempPath)));
+    private List<List<K>> struc2vecWalk() throws IOException {
+        // List<Map<K, List<Double>>> layersAlias = (List<Map<K, List<Double>>>) GraphHelper.loadObject(new File(String.format("%slayers_alias.kryo", this.tempPath)));
+        // List<Map<K, List<Double>>> layersAccept = (List<Map<K, List<Double>>>) GraphHelper.loadObject(new File(String.format("%slayers_accept.kryo", this.tempPath)));
+        // List<Map<K, List<K>>> layersAdj = (List<Map<K, List<K>>>) GraphHelper.loadObject(new File(String.format("%slayers_adj.kryo", this.tempPath)));
+        // List<Map<K, Integer>> gamma = (List<Map<K, Integer>>) GraphHelper.loadObject(new File(String.format("%sgamma.kryo", this.tempPath)));
 
+        AtomicInteger i = new AtomicInteger();
         int initialLayer = 0;
-        List<List<K>> walks = new ArrayList();
+        List<List<K>> allWalks = new ArrayList();
         GNNHelper.partitionNumber(this.numWalks, this.workers).parallelStream().parallel().forEach(part -> {
-            this.walks.addAll(GNNHelper.simulateWalks(this.graph.getVertexList(), this.numWalks, this.walkLength, this.stayProb, initialLayer, layersAlias, layersAccept, layersAdj, gamma));
+            allWalks.addAll(GNNHelper.simulateWalks(this.graph.getVertexList(), this.numWalks, this.walkLength, this.stayProb, initialLayer, layersAlias, layersAccept, layersAdj, gamma));
         });
-        return walks;
+        return allWalks;
     }
 
     public void train(int embed_size, int window_size, int workers, int iterator) throws InterruptedException {
