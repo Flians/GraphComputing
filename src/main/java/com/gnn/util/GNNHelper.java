@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JFrame;
 import jsat.SimpleDataSet;
 import jsat.classifiers.CategoricalData;
@@ -279,7 +278,7 @@ public class GNNHelper {
         try {
             int xSize = embeddings.values().iterator().next().size();
             ArrayList<Attribute> attributes = new ArrayList<Attribute>();
-            for (int i=0; i<xSize; i++) {
+            for (int i = 0; i < xSize; i++) {
                 attributes.add(new Attribute("coordinate_" + i));
             }
             List<String> classes = new ArrayList<>(labels.keySet());
@@ -292,7 +291,7 @@ public class GNNHelper {
                 double num[] = new double[instances.numAttributes()];
                 Instance instance = new DenseInstance(1, num);
                 vs.forEach(v -> {
-                    for (int j=0; j<xSize; j++) {
+                    for (int j = 0; j < xSize; j++) {
                         num[j] = embeddings.get(v).get(j);
                     }
                     num[instances.classIndex()] = instances.attribute(instances.classIndex()).indexOfValue(label);
