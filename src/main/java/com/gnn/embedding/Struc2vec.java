@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 import org.apache.commons.collections.map.HashedMap;
@@ -299,9 +298,9 @@ public class Struc2vec<K, VV, EV> {
     }
 
     private void computeFk(Map<Pair<K, K>, List<Double>> distance) {
-        distance.entrySet().forEach(item -> {
-            for (int i = 1; i < item.getValue().size(); ++i) {
-                item.getValue().set(i, item.getValue().get(i) + item.getValue().get(i - 1));
+        distance.forEach((key, value) -> {
+            for (int i = 1; i < value.size(); ++i) {
+                value.set(i, value.get(i) + value.get(i - 1));
             }
         });
     }
@@ -388,7 +387,6 @@ public class Struc2vec<K, VV, EV> {
         // List<Map<K, List<K>>> layersAdj = (List<Map<K, List<K>>>) GraphHelper.loadObject(new File(String.format("%slayers_adj.kryo", this.tempPath)));
         // List<Map<K, Integer>> gamma = (List<Map<K, Integer>>) GraphHelper.loadObject(new File(String.format("%sgamma.kryo", this.tempPath)));
 
-        AtomicInteger i = new AtomicInteger();
         int initialLayer = 0;
         List<List<K>> allWalks = new ArrayList();
         GNNHelper.partitionNumber(this.numWalks, this.workers).parallelStream().parallel().forEach(part -> {
