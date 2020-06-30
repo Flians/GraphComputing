@@ -42,8 +42,6 @@ public class GNNHelper {
         Map<K, List<K>> part = new HashMap<>();
         int i = 0;
         for (Map.Entry<K, List<K>> entry : vertices.entrySet()) {
-            K mapKey = entry.getKey();
-            List<K> mapValue = entry.getValue();
             part.put(entry.getKey(), entry.getValue());
             ++i;
             if (i % batchSize == 0) {

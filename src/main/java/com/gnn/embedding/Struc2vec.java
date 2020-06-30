@@ -396,6 +396,16 @@ public class Struc2vec<K, VV, EV> {
     }
 
     public void train(int embed_size, int window_size, int workers, int iterator) throws InterruptedException {
+        if (this.walks.isEmpty()) {
+            System.err.println("walks is empty in Struc2vec.train!");
+            return;
+        }
+        List<List<String>> dataset;
+        if (!(this.walks.get(0).get(0) instanceof String)) {
+            dataset = this.walks.stream().map(walk -> walk.stream().map(String::valueOf).collect(Collectors.toList())).collect(Collectors.toList());
+        } else {
+            dataset = this.walks.stream().map(walk -> (List<String>) walk).collect(Collectors.toList());
+        }
         this.model = Word2VecModel.trainer()
             .setMinVocabFrequency(0)
             .useNumThreads(workers)
@@ -405,7 +415,7 @@ public class Struc2vec<K, VV, EV> {
             .setLayerSize(embed_size)
             .setDownSamplingRate(1e-3)
             .setNumIterations(iterator)
-            .train(Iterables.partition((List<String>) this.walks.stream().flatMap(List::stream).collect(Collectors.toList()), this.walkLength));
+            .train(Iterables.partition(dataset.stream().flatMap(List::stream).collect(Collectors.toList()), this.walkLength));
     }
 
     public Map<K, List<Double>> getEmbeddings() throws IOException {
